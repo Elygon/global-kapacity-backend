@@ -35,20 +35,20 @@ app.use(express.urlencoded({extended: true}))
 
 //user routes
 app.use('/user_auth', require('./routes/user/auth'))
-app.use('/user_profile', require('./routes/user/profile'))
+//app.use('/user_profile', require('./routes/user/profile'))
 
 
 //organization routes
 app.use('/organization_auth', require('./routes/organization/auth'))
-app.use('/organization_profile', require('./routes/organization/profile'))
+//app.use('/organization_profile', require('./routes/organization/profile'))
 
 //admin routes
-app.use('/admin_masterAdmin', require('./routes/admin/masterAdmin'))
+/*app.use('/admin_masterAdmin', require('./routes/admin/masterAdmin'))
 app.use('/staff_admin', require('./routes/staff/admin'))
 app.use('/admin_auth', require('./routes/admin/auth'))
 app.use('/admin_profile', require('./routes/admin/profile'))
 app.use('/admin_user', require('./routes/admin/user'))
-
+*/
 /*
 app.use('/guest_room', require('./routes/guest/room'))
 app.use('/guest_booking', require('./routes/guest/booking'))

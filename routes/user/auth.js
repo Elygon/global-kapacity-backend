@@ -613,7 +613,7 @@ const resetPasswordCode = req.params.resetPasswordCode
   })
 
 //endpoint to delete account
-router.post('/delete', verifyToken, async(req, res) => {
+router.post('/delete', authToken, async(req, res) => {
     try {
         //Find the user and delete the account
         const deleted = await Guest.findByIdAndDelete(req.user._id)

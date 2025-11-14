@@ -403,7 +403,7 @@ router.post('/forgot_password', async (req, res) => {
         );
 
         // Send email (or SMS later if implemented)
-        await sendPasswordReset(user.email /*|| user.phone_no*/, user.firstname, user.lastname, resetToken)
+        await sendPasswordReset(user.email /*|| user.phone_no*/, user.firstname, resetToken)
 
         return res.status(200).send({ status: 'ok', msg: 'Password reset link sent. Please check your email or phone.' })
 
@@ -506,7 +506,7 @@ const resetPasswordCode = req.params.resetPasswordCode
                   <h6 style="display: flex; align-items: center; justify-content: center; font-weight: 200;">Enter the new password
                       you want to use in recovering your account</h6>    
           
-              <form action="http://localhost:1000/guest_auth/reset_password" method="post">
+              <form action="http://localhost:7000/user_auth/reset_password" method="post">
                   <div class="imgcontainer">
                   </div>
                   <div class="container">

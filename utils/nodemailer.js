@@ -13,10 +13,10 @@ const transport = nodemailer.createTransport({
 
 
 // Password Reset Email (User)
-const sendPasswordReset = async (email, fullname, resetPasswordCode) => {
+const sendPasswordReset = async (email, firstname, resetPasswordCode) => {
     try {
         const info = await transport.sendMail({
-            from: `"Classic Crown Hotel"  <${process.env.MAIL_USER}>`,
+            from: `"Global Kapacity"  <${process.env.MAIL_USER}>`,
             to: email,
             subject: "Reset your password",
             html: `<div>
@@ -25,10 +25,10 @@ const sendPasswordReset = async (email, fullname, resetPasswordCode) => {
                 <img alt="Heurekka" style="height: 30px; margin-right: 8px;" src="https://drive.google.com/uc?export=view&id=1REJbJrhQZakh4UD3gypU8OPa-A2RJVZA">
             </div>
             <br/>
-            <p style="line-height: 1.2;">Hi ${fullname},</p>
+            <p style="line-height: 1.2;">Hi ${firstname},</p>
             <p style="line-height: 1.2;">We've received a request to reset your password.</p>
             <p style="line-height: 1.5;">If you didn't make the request, just ignore this message. Otherwise, you can reset your password.</p>        
-            <a href=http://localhost:1000/guest_auth/reset_password/${resetPasswordCode}>
+            <a href=http://localhost:7000/user_auth/reset_password/${resetPasswordCode}>
                 <button style="font-weight: 500;font-size: 14px;cursor: pointer; background-color: rgba(238, 119, 36, 1); border: none; border-radius: 4px; padding: 12px 18px 12px 18px; color: white;">
                     Reset your password
                 </button>
@@ -49,30 +49,67 @@ const sendPasswordReset = async (email, fullname, resetPasswordCode) => {
 }
 
 
-// Password Reset Email (Staff) - Gmail-friendly
-const sendPasswordResetStaff = async (email, fullname, resetPasswordCode) => {
+// Password Reset Email (Organization)
+const sendPasswordResetOrg = async (email, name_of_organization, resetPasswordCode) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity"  <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "Reset your password",
+            html: `<div>
+            <div style="display: flex; align-items: center;">
+                <img alt="Logo" style="height: 50px; margin-right: 8px; width: 50px;" src="https://drive.google.com/uc?export=view&id=1VxBysUQV0835JiijO4hs24M9A0rZ_Q-d">
+                <img alt="Heurekka" style="height: 30px; margin-right: 8px;" src="https://drive.google.com/uc?export=view&id=1REJbJrhQZakh4UD3gypU8OPa-A2RJVZA">
+            </div>
+            <br/>
+            <p style="line-height: 1.2;">Hi ${name_of_organization},</p>
+            <p style="line-height: 1.2;">We've received a request to reset your password.</p>
+            <p style="line-height: 1.5;">If you didn't make the request, just ignore this message. Otherwise, you can reset your password.</p>        
+            <a href=http://localhost:7000/organization_auth/reset_password/${resetPasswordCode}>
+                <button style="font-weight: 500;font-size: 14px;cursor: pointer; background-color: rgba(238, 119, 36, 1); border: none; border-radius: 4px; padding: 12px 18px 12px 18px; color: white;">
+                    Reset your password
+                </button>
+            </a>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <p style="line-height: 1.5">If you did not make this request, please ignore this email. <br /><br />Best regards, <br />Team Cart.</p>
+        </div>`
+    })
+
+    console.log("Email sent:", info.response)
+  } catch (error) {
+    console.error("Error sending email:", error)
+    return { msg: "Error sending email", error }
+  }
+}
+
+
+// Password Reset Email (Admin) - Gmail-friendly
+const sendPasswordResetAdmin = async (email, firstname, resetPasswordCode) => {
     try {
         const mailOptions = {
-            from: `"Classic Crown Hotel"  <${process.env.MAIL_USER}>`, // full email address
+            from: `"Global Kapacity"  <${process.env.MAIL_USER}>`, // full email address
             to: email,
-            subject: "Staff Reset Password",
+            subject: "Admin Reset Password",
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-                    <h3>Hi ${fullname},</h3>
+                    <h3>Hi ${firstname},</h3>
                     <p>We've received a request to reset your password.</p>
                     <p>If you didn't make the request, ignore this email. Otherwise, click the button below:</p>
-                    <a href="http://localhost:1000/staff_auth/reset_password/${resetPasswordCode}" style="text-decoration: none;">
+                    <a href="http://localhost:7000/admin_auth/reset_password/${resetPasswordCode}" style="text-decoration: none;">
                         <span style="display: inline-block; background-color: #EE7724; color: white; padding: 12px 18px; border-radius: 4px; font-weight: 500;">
                             Reset Password
                         </span>
                     </a>
                     <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                    <p>http://localhost:1000/staff_auth/reset_password/${resetPasswordCode}</p>
+                    <p>http://localhost:7000/admin_auth/reset_password/${resetPasswordCode}</p>
                     <hr>
                     <p>Best regards,<br>Team Cart</p>
                 </div>
             `,
-            text: `Hi ${fullname},\n\nWe've received a request to reset your password.\n\nIf you didn't make the request, ignore this email. Otherwise, visit this link:\nhttp://localhost:1000/staff_auth/reset_password/${resetPasswordCode}\n\nBest regards,\nTeam Cart`
+            text: `Hi ${firstname},\n\nWe've received a request to reset your password.\n\nIf you didn't make the request, ignore this email. Otherwise, visit this link:\nhttp://localhost:1000/staff_auth/reset_password/${resetPasswordCode}\n\nBest regards,\nTeam Cart`
         }
 
         const info = await transport.sendMail(mailOptions)
@@ -451,7 +488,8 @@ const sendPaymentSuccessMail = async (email, fullname, amount, reference, type =
 
 module.exports = {
     sendPasswordReset,
-    sendPasswordResetStaff,
+    sendPasswordResetOrg,
+    sendPasswordResetAdmin,
     sendStaffAccountMail,
     sendGuestBookingMail,
     sendGuestBookingStatusMail,

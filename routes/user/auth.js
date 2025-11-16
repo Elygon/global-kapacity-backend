@@ -6,12 +6,16 @@ const jwt = require('jsonwebtoken')
 const User = require('../../models/user')
 //const Call = require('../../models/call')
 
-const { sendOTP, sendPasswordReset } = require("../../utils/nodemailer")
+const Statistics = require("../../models/statistics")
+const { sendOtpEmail, sendPasswordReset } = require("../../utils/nodemailer")
 const sendMessage = require("../../utils/africastalking")
 const {sendWhatsappOtp, sendSmsOtp} = require("../../utils/twilio")
 
 // Import middleware that verifies guest token
 const authToken = require('../../middleware/authToken')
+
+// At the top of your auth.js file
+const OTP_STORE = {}; // temporary in-memory store for OTPs
 
 let OTP, user
 
@@ -92,138 +96,109 @@ router.post('/apple', async (req, res) => {
  * endpoint for user to signup(send otp stage)
  * @param phone_no  {string} must be in +234 format
  */
+// Stage One - Collect info & send OTP
 router.post("/signup_stage_one", async (req, res) => {
-  const { firstname, lastname, email, phone_no, password, preferred_method } = req.body;
+  const { firstname, lastname, email, phone_no, password, otp_channel } = req.body;
 
-  // check for required fields
-  if (!firstname || !lastname || !email || !phone_no || !password || !preferred_method)
-    return res
-      .status(400)
-      .send({ status: "error", msg: "required fields must be filled" });
-
-  try {
-    // check for duplicate email
-    let found = await User.findOne({ email, is_deleted: false }).lean();
-    if (found)
-      return res.status(400).send({
-        status: "error",
-        msg: "an account with this email already exists",
-      });
-
-    // check for duplicate phone number
-    let found2 = await User.findOne({ phone_no, is_deleted: false }).lean();
-    if (found2)
-      return res.status(400).send({
-        status: "error",
-        msg: "an account with this phone number already exists",
-      });
-
-    // check if password matches
-    if (password !== confirm_password)
-      return res
-        .status(400)
-        .send({ status: "error", msg: "password missmatch" });
-
-    // authenticate phone_number by sending otp
-    OTP = "";
-    for (let i = 0; i < 6; i++) {
-      OTP += process.env.TWILIO_DIGITS[Math.floor(Math.random() * 10)];
-    }
-
-    // handle logic for pereferred method
-    if (preferred_method === "email") {
-      sendOTP(email, OTP);
-    } else if (preferred_method === "sms") {
-      sendSmsOtp(phone_no, OTP);
-    } else if (preferred_method === "whatasapp") {
-      // await sendWhatsappOtp(phone_no, OTP); //  TODO: Comment out later
-      sendSmsOtp(phone_no, OTP);
-    }
-
-    // // remove when above code is uncommented out
-    // sendOTP(email, OTP);
-
-    return res.status(200).send({ status: "ok", msg: "success" });
-  } catch (e) {
-    console.error(e);
-    return res
-      .status(500)
-      .send({ status: "error", msg: "some error occurred", error: e.message });
+  // Check required fields
+  if (!firstname || !lastname || !email || !phone_no || !password || !otp_channel) {
+    return res.status(400).send({ status: "error", msg: "All fields are required" });
   }
-});
 
-
-// endpoint for user to signup(verify otp stage)
-router.post("/signup_stage_two", async (req, res) => {
-  const { otp, firstname, lastname, phone_no, email, password, confirm_password } = req.body;
-
-  // check for required fields
-  if (!firstname || !lastname || !phone_no || !email || !otp || !password || !confirm_password)
-    return res
-      .status(400)
-      .send({ status: "error", msg: "required fields must be filled" });
+  // Validate OTP channel
+  const validChannels = ["email", "sms", "whatsapp"];
+  if (!validChannels.includes(otp_channel.toLowerCase())) {
+    return res.status(400).send({ status: "error", msg: "Invalid OTP channel" });
+  }
 
   try {
-    if (otp != OTP) {
-      return res.status(400).send({ status: "error", msg: "Incorrect OTP" });
+    // Check duplicate email or phone
+    const existingUser = await User.findOne({ $or: [{ email }, { phone_no }] });
+    if (existingUser) {
+      return res.status(400).send({ status: "error", msg: "Email or phone already exists" });
     }
-    OTP = "";
 
-    const timestamp = Date.now();
+    // Generate 6-digit OTP
+    OTP = Math.floor(100000 + Math.random() * 900000);
+    console.log("Generated OTP:", OTP);
 
-    const user = new User();
-    user.firstname = firstname;
-    user.lastname = lastname;
-    user.phone_no = phone_no || "";
-    user.email = email;
-    user.google_id = "";
-    user.img_url = "";
-    user.img_id = "";
-    user.timestamp = timestamp;
-    user.password = await bcrypt.hash(password, 10);
+    // ********* TEMP: Comment out actual sending until implemented *********
+    /*
+    if (otp_channel === "email") {
+      await sendOTPEmail(email, OTP);
+    } else if (otp_channel === "sms") {
+      await sendOTPSMS(phone_no, OTP);
+    } else if (otp_channel === "whatsapp") {
+      await sendOTPWhatsApp(phone_no, OTP);
+    }
+    */
+
+    // Store OTP temporarily
+    OTP_STORE[email] = OTP
+
+    // Send OTP email
+    await sendOtpEmail(email, firstname, OTP)
+
+    // Respond with success
+    return res.status(200).send({
+      status: "ok",
+      msg: `OTP sent via ${otp_channel}`,
+      channel: otp_channel
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ status: "error", msg: "Server error" });
+  }
+})
+
+
+// Stage Two - Verify OTP & create user
+router.post("/signup_stage_two", async (req, res) => {
+  const { firstname, lastname, email, phone_no, password, otp } = req.body;
+
+  if (!firstname || !lastname || !email || !phone_no || !password || !otp) {
+    return res.status(400).send({ status: "error", msg: "All fields required" });
+  }
+
+  try {
+    // Verify OTP
+    if (!OTP_STORE[email] || OTP_STORE[email] !== otp) {
+      return res.status(400).send({ status: "error", msg: "Invalid OTP" });
+    }
+
+    delete OTP_STORE[email]; // Clear OTP after verification
+
+    // Create new user
+    const user = new User({
+      firstname,
+      lastname,
+      email,
+      phone_no,
+      password: await bcrypt.hash(password, 10),
+      google_id: "",
+      img_url: '',
+      img_id: '',
+      timestamp: Date.now(),
+    });
 
     await user.save();
 
-    /*
-    // create call document
-    const call = new Call();
-    call.user_id = user._id;
-    call.designation = "";
-    call.channel_name = "";
-    call.call_token = "";
-    call.firstname = "";
-    call.lastname = "";
-    call.img_url = "";
-    call.timestamp = Date.now();
+    // Generate JWT
+    const token = jwt.sign({ _id: user._id, email: user.email }, process.env.JWT_SECRET);
 
-    await call.save();
-    */
-
-    // generate token
-    const token = jwt.sign(
-      {
-        _id: user._id,
-        email: user.email,
-      },
-      process.env.JWT_SECRET
-    );
-
-    await Statistics.updateOne(
-      {},
-      {
+    await Statistics.updateOne({},{
         $inc: {
-          no_of_users: 1,
+          no_of_organizations: 1,
         },
-      },
+    },  
       { upsert: true }
     );
 
     return res.status(200).send({ status: "ok", msg: "success", user, token });
-  } catch (e) {
-    console.error(e);
-    return res
-      .status(500)
-      .send({ status: "error", msg: "some error occurred", error: e.message });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ status: "error", msg: "Server error" });
   }
 });
 
@@ -311,53 +286,6 @@ router.post('/logout', authToken, async(req, res) => {
 
         return res.status(500).send({status: 'error', msg:'An error occured'})    
     }
-})
-
-// endpoint to change password
-router.post('/change_password', authToken, async(req, res)=>{
-    const {old_password, new_password, confirm_new_password} = req.body
-
-    //check if fields are passed correctly
-    if(!old_password || !new_password || !confirm_new_password){
-       return res.status(400).send({status: 'error', msg: 'all fields must be filled'})
-    }
-
-    // get user document and change password
-    try {
-        const user =  await User.findById(req.user._id).select("password")
-
-        if (!user) {
-            return res.status(400).send({status:'error', msg:'User not found'})
-        }
-
-        //Compare old password
-        const check = await bcrypt.compare(old_password, user.password)
-        if(!check){
-            return res.status(400).send({status:'error', msg:'old password is incorrect'})
-        }
-
-        //Prevent reusing old password
-        const isSamePassword = await bcrypt.compare(new_password, user.password)
-        if(isSamePassword){
-            return res.status(400).send({status:'error', msg:'New password must be different from the old password'})
-        }
-
-        //Confirm new passwords match
-        if (new_password !== confirm_new_password) {
-            return res.status(400).send({status: 'error', msg: 'Password mismatch'})
-        }
-
-        //Hash new password and update
-        const updatePassword = await bcrypt.hash(confirm_new_password, 10)
-        await User.findByIdAndUpdate(req.user._id, {password: updatePassword})
-
-        return res.status(200).send({status: 'ok', msg: 'success'})
-    } catch (error) {
-        if(error.name === 'JsonWebTokenError'){
-        console.log(error)
-        return res.status(401).send({status: 'error', msg: 'Token Verification Failed', error: error.message})
-}
-      return res.status(500).send({status: 'error', msg: 'An error occured', error: error.message})}
 })
 
 

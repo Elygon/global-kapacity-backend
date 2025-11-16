@@ -12,6 +12,51 @@ const transport = nodemailer.createTransport({
 })
 
 
+// OTP Email (User)
+const sendOtpEmail = async (email, firstname, otp) => {
+  try {
+    const info = await transport.sendMail({
+      from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: "Your verification code",
+      html: `<div>
+        <p>Hi ${firstname},</p>
+        <p>Your verification code is:</p>
+        <h2>${otp}</h2>
+        <p>This code will expire in 10 minutes.</p>
+      </div>`
+    });
+
+    console.log("OTP email sent:", info.response);
+  } catch (error) {
+    console.error("Error sending OTP email:", error);
+    return { msg: "Error sending OTP email", error };
+  }
+}
+
+
+// OTP Email (Organization)
+const sendOtpEmailOrg = async (email, company_name, otp) => {
+  try {
+    const info = await transport.sendMail({
+      from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: "Your verification code",
+      html: `<div>
+        <p>Hi ${company_name},</p>
+        <p>Your verification code is:</p>
+        <h2>${otp}</h2>
+        <p>This code will expire in 10 minutes.</p>
+      </div>`
+    });
+
+    console.log("OTP email sent:", info.response);
+  } catch (error) {
+    console.error("Error sending OTP email:", error);
+    return { msg: "Error sending OTP email", error };
+  }
+}
+
 // Password Reset Email (User)
 const sendPasswordReset = async (email, firstname, resetPasswordCode) => {
     try {
@@ -50,7 +95,7 @@ const sendPasswordReset = async (email, firstname, resetPasswordCode) => {
 
 
 // Password Reset Email (Organization)
-const sendPasswordResetOrg = async (email, name_of_organization, resetPasswordCode) => {
+const sendPasswordResetOrg = async (email, company_name, resetPasswordCode) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity"  <${process.env.MAIL_USER}>`,
@@ -62,7 +107,7 @@ const sendPasswordResetOrg = async (email, name_of_organization, resetPasswordCo
                 <img alt="Heurekka" style="height: 30px; margin-right: 8px;" src="https://drive.google.com/uc?export=view&id=1REJbJrhQZakh4UD3gypU8OPa-A2RJVZA">
             </div>
             <br/>
-            <p style="line-height: 1.2;">Hi ${name_of_organization},</p>
+            <p style="line-height: 1.2;">Hi ${company_name},</p>
             <p style="line-height: 1.2;">We've received a request to reset your password.</p>
             <p style="line-height: 1.5;">If you didn't make the request, just ignore this message. Otherwise, you can reset your password.</p>        
             <a href=http://localhost:7000/organization_auth/reset_password/${resetPasswordCode}>
@@ -122,34 +167,30 @@ const sendPasswordResetAdmin = async (email, firstname, resetPasswordCode) => {
 }
 
 
-// Confirmation of Staff account created
-const sendStaffAccountMail = async (email, password, fullname, role, task) => {
+// Confirmation of admin account created
+const sendAdminAccountMail = async (email, password, firstname, role) => {
     try {
-        // Build task list only if there are tasks
-        const taskSection = Array.isArray(task) && task.length > 0 ? `<p><strong>Assigned Tasks:</strong> ${task.join(', ')}</p>` : ''
-
         const info = await transport.sendMail({
-            from: `"Classic Crown Hotel" <${process.env.MAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Welcome to Classic Crown Hotel as ${role}`,
+            subject: `Welcome to Global Kapacity as ${role}`,
             html: `
                 <h2>Hi ${fullname},</h2>
                 <p>Your ${role} account has been successfully created.</p>
-                ${taskSection}
                 <p>Here are your login details:</p>
                 <ul>
                     <li><strong>Email:</strong> ${email}</li>
                     <li><strong>Password:</strong> ${password}</li>
                 </ul>
                 <p>Please log in and change your password immediately.</p>
-                <p>Best Regards,<br/>Classic Crown Management Team</p>
+                <p>Best Regards,<br/>Global Kapacity Management Team</p>
            `,
         })
 
-        console.log("Staff Account Creation Email sent:", info.response)
+        console.log("Admin Account Creation Email sent:", info.response)
         return { status: "ok", msg: "Email sent" }
     } catch (error) {
-        console.error("Error sending staff account creation email:", error)
+        console.error("Error sending admin account creation email:", error)
         return { status: "error", msg: "Failed to send email", error }
     }
 }
@@ -427,27 +468,29 @@ const sendGuestEventCancellationMail = async (email, fullname, hallName, date, s
 }
 
 
-// Guest Payment Confirmation
-const sendPaymentSuccessMail = async (email, fullname, amount, reference, type = 'general') => {
+// User Payment Confirmation
+const sendPaymentSuccessMail = async (email, firstname, amount, reference, type = 'general') => {
     try {
         let title = 'Payment Successful'
-        if (type === 'booking') title = 'Room Booking Payment Successful'
-        if (type === 'order') title = 'Food Order Payment Successful'
-        if (type === 'event') title = 'Event Hall Booking Payment Successful'
+        if (type === 'Subscription') title = 'Subscription Payment Successful'
+        /*if (type === 'order') title = 'Food Order Payment Successful'
+        if (type === 'event') title = 'Event Hall Booking Payment Successful'*/
 
         const info = await transport.sendMail({
-            from: `"Classic Crown Hotel" <${process.env.EMAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.EMAIL_USER}>`,
             to: email,
             subject: 'Payment Confirmation - Thank you for your payment',
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7;">
                     <div style="max-width: 600px; margin: auto; background: white; border-radius: 8px; padding: 20px;">
                         <h2 style="color: #2c3e50;">Payment Successful 🎉</h2>
-                        <p>Dear <strong>${fullname}</strong>,</p>
+                        <p>Dear <strong>${firstname}</strong>,</p>
                         <p>We have received your payment of <strong>₦${amount}</strong>.</p>
                         <p>Your payment reference is <strong>${reference}</strong>.</p>
-                        <p>Thank you for choosing our hotel. We look forward to hosting you!</p>
-                        <p style="margin-top: 20px;">Warm regards,<br>Hotel Management</p>
+                        <p>Thank you for subscribing to <strong>Global Kapacity</strong>! Your subscription is now active.</p>
+                        <p>We look forward to helping you explore opportunities, connect with professionals and get the most
+                        out of our platform!</p>
+                        <p style="margin-top: 20px;">Warm regards,<br>Kapacity Management</p>
                     </div>
                 </div>
             `
@@ -460,6 +503,45 @@ const sendPaymentSuccessMail = async (email, fullname, amount, reference, type =
         return { status: "error", msg: "Failed to send email", error }
     }
 }
+
+
+// Organization Payment Confirmation
+const sendPaymentSuccessMailOrg = async (email, company_name, amount, reference, type = 'general') => {
+    try {
+        let title = 'Payment Successful'
+        if (type === 'Subscription') title = 'Subscription Payment Successful'
+        /*if (type === 'order') title = 'Food Order Payment Successful'
+        if (type === 'event') title = 'Event Hall Booking Payment Successful'*/
+
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Payment Confirmation - Thank you for your payment',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7;">
+                    <div style="max-width: 600px; margin: auto; background: white; border-radius: 8px; padding: 20px;">
+                        <h2 style="color: #2c3e50;">Payment Successful 🎉</h2>
+                        <p>Dear <strong>${company_name}</strong>,</p>
+                        <p>We have received your payment of <strong>₦${amount}</strong>.</p>
+                        <p>Your payment reference is <strong>${reference}</strong>.</p>
+                        <p>Thank you for subscribing to <strong>Global Kapacity</strong>! Your subscription is now active.</p>
+                        <p>We look forward to helping you explore opportunities, connect with professionals and get the most
+                        out of our platform!</p>
+                        <p style="margin-top: 20px;">Warm regards,<br>Kapacity Management</p>
+                    </div>
+                </div>
+            `
+        })
+
+        console.log("✅ Payment confirmation Email sent:", info.response)
+        return { status: "ok", msg: "Email sent" }
+    } catch (error) {
+        console.error('❌Error sending payment email:', error)
+        return { status: "error", msg: "Failed to send email", error }
+    }
+}
+
+
 
 
 
@@ -487,10 +569,12 @@ const sendPaymentSuccessMail = async (email, fullname, amount, reference, type =
 // }
 
 module.exports = {
+    sendOtpEmail,
+    sendOtpEmailOrg,
     sendPasswordReset,
     sendPasswordResetOrg,
     sendPasswordResetAdmin,
-    sendStaffAccountMail,
+    sendAdminAccountMail,
     sendGuestBookingMail,
     sendGuestBookingStatusMail,
     sendGuestBookingCancellationMail,
@@ -499,5 +583,6 @@ module.exports = {
     sendGuestEventApprovalMail,
     sendGuestEventRejectionMail,
     sendGuestEventCompletionMail,
-    sendPaymentSuccessMail
+    sendPaymentSuccessMail,
+    sendPaymentSuccessMailOrg
 }

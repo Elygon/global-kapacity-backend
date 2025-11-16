@@ -2,7 +2,8 @@ const mongoose = require('mongoose')
 
 const adminSchema = new mongoose.Schema({
     role: String,
-    fullname: String,
+    firstname: String,
+    lastname: String,
     email: String,
     phone_no: String,
     password: String,

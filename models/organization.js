@@ -3,7 +3,7 @@ const Schema = mongoose.Schema
 
 const organizationSchema = new Schema({
     role: { type: String, default: 'organization' },
-    name_of_organization: String,
+    company_name: String,
     company_reg_no: String,
     industry: {
         type: String,
@@ -43,21 +43,29 @@ const organizationSchema = new Schema({
             'Sports & Recreation',
             'Technology & Software',
             'Telecommunications',
-            'Others (Please Specify)', // Default for custom input
-        ],
-        default: 'Others (Please Specify)'
+            'Others', // Default for custom input
+        ]
     },
+    custom_industry: { type: String, default: null}, // for Others
     email: String, 
     phone_no: String,
     password: String,
-    profile_img_id: { type: String, default: '' },
-    profile_img_url: { type: String, default: '' },
-    address: String,
     authProvider: {
         type: String,
         enum: ['email', 'google', 'apple'],
         default: 'email' // default is normal signup
     },
+
+    // for subscription plans
+    subscription: {
+        plan_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription', default: null },
+        billing_cycle: { type: String, enum: ['monthly', 'quarterly', 'yearly'], default: null },
+        start_date: Date,
+        end_date: Date,
+        status: { type: String, enum: ['inactive', 'active', 'expired'], default: 'inactive' }
+    },
+
+    // for organization's account status
     is_online:{type: Boolean, default: false },
     is_deleted: {type: Boolean, default: false},
     last_login: Number,

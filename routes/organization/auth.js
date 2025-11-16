@@ -5,21 +5,24 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const Organization = require('../../models/organization')
 
-const { sendOTP, sendPasswordReset } = require("../../utils/nodemailer")
+const { sendOtpEmail, sendPasswordResetOrg } = require("../../utils/nodemailer")
 const sendMessage = require("../../utils/africastalking")
 const {sendWhatsappOtp, sendSmsOtp} = require("../../utils/twilio")
 
 // Import middleware that verifies guest token
 const authToken = require('../../middleware/authToken')
 
-let OTP, user
+// At the top of your auth.js file
+const OTP_STORE = {}; // temporary in-memory store for OTPs
+
+let OTP, organization
 
 
 
 // google signup/login endpoint
 router.post('/google', async (req, res) => {
   try {
-    const { name_of_organization, company_reg_no, industry, email } = req.body
+    const { company_name, company_reg_no, industry, email } = req.body
 
     // Check if organization exists
     let org = await Organization.findOne({ email, authProvider: 'google' })
@@ -31,7 +34,7 @@ router.post('/google', async (req, res) => {
       }
 
       org = await Organization.create({
-        name_of_organization,
+        company_name,
         company_reg_no,
         industry,
         email,
@@ -59,7 +62,7 @@ router.post('/google', async (req, res) => {
 // apple signup/login endpoint
 router.post('/apple', async (req, res) => {
   try {
-    const { name_of_organization, company_reg_no, industry, email } = req.body;
+    const { company_name, company_reg_no, industry, email } = req.body;
 
     // Check if organization exists
     let org = await Organization.findOne({ email, authProvider: 'apple' });
@@ -71,7 +74,7 @@ router.post('/apple', async (req, res) => {
       }
 
       org = await Organization.create({
-        name_of_organization,
+        company_name,
         company_reg_no,
         industry,
         email,
@@ -100,141 +103,112 @@ router.post('/apple', async (req, res) => {
  * endpoint for organization to signup(send otp stage)
  * @param phone_no  {string} must be in +234 format
  */
+// Stage One - Collect info & send OTP
 router.post("/signup_stage_one", async (req, res) => {
-  const { name_of_organization, company_reg_no, industry, email, phone_no, password, preferred_method } = req.body;
+  const { company_name, company_reg_no, industry, email, phone_no, password, otp_channel } = req.body;
 
-  // check for required fields
-  if (!name_of_organization || !company_reg_no || !industry || !email || !phone_no || !password || !preferred_method)
-    return res
-      .status(400)
-      .send({ status: "error", msg: "required fields must be filled" });
-
-  try {
-    // check for duplicate email
-    let found = await Organization.findOne({ email, is_deleted: false }).lean();
-    if (found)
-      return res.status(400).send({
-        status: "error",
-        msg: "an account with this email already exists",
-      });
-
-    // check for duplicate phone number
-    let found2 = await Organization.findOne({ phone_no, is_deleted: false }).lean();
-    if (found2)
-      return res.status(400).send({
-        status: "error",
-        msg: "an account with this phone number already exists",
-      });
-
-    // check if password matches
-    if (password !== confirm_password)
-      return res
-        .status(400)
-        .send({ status: "error", msg: "password missmatch" });
-
-    // authenticate phone_number by sending otp
-    OTP = "";
-    for (let i = 0; i < 6; i++) {
-      OTP += process.env.TWILIO_DIGITS[Math.floor(Math.random() * 10)];
-    }
-
-    // handle logic for pereferred method
-    if (preferred_method === "email") {
-      sendOTP(email, OTP);
-    } else if (preferred_method === "sms") {
-      sendSmsOtp(phone_no, OTP);
-    } else if (preferred_method === "whatasapp") {
-      // await sendWhatsappOtp(phone_no, OTP); //  TODO: Comment out later
-      sendSmsOtp(phone_no, OTP);
-    }
-
-    // // remove when above code is uncommented out
-    // sendOTP(email, OTP);
-
-    return res.status(200).send({ status: "ok", msg: "success" });
-  } catch (e) {
-    console.error(e);
-    return res
-      .status(500)
-      .send({ status: "error", msg: "some error occurred", error: e.message });
+  // Check required fields
+  if (!company_name || !company_reg_no || !industry || !email || !phone_no || !password || !otp_channel) {
+    return res.status(400).send({ status: "error", msg: "All fields are required" });
   }
-});
 
-
-// endpoint for organization to signup(verify otp stage)
-router.post("/signup_stage_two", async (req, res) => {
-  const { otp, name_of_organization, company_reg_no, industry, email, phone_no, password, confirm_password } = req.body;
-
-  // check for required fields
-  if (!name_of_organization || !company_reg_no || !industry || !email || !phone_no || !password || !otp || !password || !confirm_password)
-    return res
-      .status(400)
-      .send({ status: "error", msg: "required fields must be filled" });
+  // Validate OTP channel
+  const validChannels = ["email", "sms", "whatsapp"];
+  if (!validChannels.includes(otp_channel.toLowerCase())) {
+    return res.status(400).send({ status: "error", msg: "Invalid OTP channel" });
+  }
 
   try {
-    if (otp != OTP) {
-      return res.status(400).send({ status: "error", msg: "Incorrect OTP" });
+    // Check duplicate email or phone
+    const existingOrg = await Organization.findOne({ $or: [{ email }, { phone_no }] });
+    if (existingOrg) {
+      return res.status(400).send({ status: "error", msg: "Email or phone already exists" });
     }
-    OTP = "";
 
-    const timestamp = Date.now();
+    // Generate 6-digit OTP
+    OTP = Math.floor(100000 + Math.random() * 900000);
+    console.log("Generated OTP:", OTP);
 
-    const organization = new Organization();
-    organization.name_of_organization = name_of_organization;
-    organization.company_reg_no = company_reg_no;
-    organization.industry = industry;
-    organization.email = email;
-    organization.phone_no = phone_no || "";
-    organization.google_id = "";
-    organization.img_url = "";
-    organization.img_id = "";
-    organization.timestamp = timestamp;
-    organization.password = await bcrypt.hash(password, 10);
-
-    await organization.save();
-
+    // ********* TEMP: Comment out actual sending until implemented *********
     /*
-    // create call document
-    const call = new Call();
-    call.user_id = user._id;
-    call.designation = "";
-    call.channel_name = "";
-    call.call_token = "";
-    call.firstname = "";
-    call.lastname = "";
-    call.img_url = "";
-    call.timestamp = Date.now();
-
-    await call.save();
+    if (otp_channel === "email") {
+      await sendOTPEmail(email, OTP);
+    } else if (otp_channel === "sms") {
+      await sendOTPSMS(phone_no, OTP);
+    } else if (otp_channel === "whatsapp") {
+      await sendOTPWhatsApp(phone_no, OTP);
+    }
     */
 
-    // generate token
-    const token = jwt.sign(
-      {
-        _id: organization._id,
-        email: organization.email,
-      },
-      process.env.JWT_SECRET
-    );
+    // Store OTP temporarily
+    OTP_STORE[email] = OTP
 
-    await Statistics.updateOne(
-      {},
-      {
+    // Send OTP email
+    await sendOtpEmail(email, company_name, OTP)
+
+    // Respond with success
+    return res.status(200).send({
+      status: "ok",
+      msg: `OTP sent via ${otp_channel}`,
+      channel: otp_channel
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ status: "error", msg: "Server error" });
+  }
+})
+
+
+// Stage Two - Verify OTP & create organization account
+router.post("/signup_stage_two", async (req, res) => {
+  const { company_name, company_reg_no, industry, email, phone_no, password, otp } = req.body;
+
+  if (!company_name || !company_reg_no || !industry || !email || !phone_no || !password || !otp) {
+    return res.status(400).send({ status: "error", msg: "All fields required" });
+  }
+
+  try {
+    // Verify OTP
+    if (!OTP_STORE[email] || OTP_STORE[email] !== otp) {
+      return res.status(400).send({ status: "error", msg: "Invalid OTP" });
+    }
+
+    delete OTP_STORE[email]; // Clear OTP after verification
+
+    // Create new organization account
+    const org = new Organization({
+      company_name,
+      company_reg_no,
+      industry,
+      email,
+      phone_no,
+      password: await bcrypt.hash(password, 10),
+      google_id: "",
+      img_url: '',
+      img_id: '',
+      timestamp: Date.now(),
+    });
+
+    await org.save();
+
+    // Generate JWT
+    const token = jwt.sign({ _id: org._id, email: org.email }, process.env.JWT_SECRET);
+
+    await Statistics.updateOne({},{
         $inc: {
           no_of_organizations: 1,
         },
-      },
+    },  
       { upsert: true }
     );
 
-    return res.status(200).send({ status: "ok", msg: "success", organization, token });
-  } catch (e) {
-    console.error(e);
-    return res
-      .status(500)
-      .send({ status: "error", msg: "some error occurred", error: e.message });
+    return res.status(200).send({ status: "ok", msg: "success", org, token });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ status: "error", msg: "Server error" });
   }
-})
+});
 
 
 //endpoint for organization to sign in
@@ -254,48 +228,48 @@ router.post('/sign_in', async(req, res) => {
         }
 
         // Fetch guest using only valid conditions
-        let organization = await Organization.findOne({ $or: conditions }).lean()
-        if(!organization)
+        let org = await Organization.findOne({ $or: conditions }).lean()
+        if(!org)
             return res.status(400).send({
         status: 'error', msg:'No account found with the provided email or phone number'})
 
         // check if organization's account has been verified
-        if (organization.is_verified) {
+        if (org.is_verified) {
             return res.status(400).send({ status: "error", msg: "Please verify your account first." })
         }
 
         // check if blocked
-        if (organization.is_blocked === true) {
+        if (org.is_blocked === true) {
             return res.status(400).send({ status: "error", msg: "account blocked" })
         }
         
         // check if banned
-        if (organization.is_banned === true) {
+        if (org.is_banned === true) {
             return res.status(400).send({ status: "error", msg: "account banned" })
         }
 
         // check if deleted
-        if (organization.is_deleted === true) {
+        if (org.is_deleted === true) {
             return res.status(400).send({ status: "error", msg: "account deleted" })
         }
 
         //compare password
-        const correct_password = await bcrypt.compare(password, organization.password)
+        const correct_password = await bcrypt.compare(password, org.password)
         if(!correct_password)
             return res.status(400).send({status: 'error', msg:'Password is incorrect'})
 
         // create token
         const token = jwt.sign({
-            _id: organization._id,
-            email: organization.email,
-            phone_no: organization.phone_no
+            _id: org._id,
+            email: org.email,
+            phone_no: org.phone_no
         }, process.env.JWT_SECRET, {expiresIn: '1h'})
 
         //update guest document to online
-        organization = await Organization.findOneAndUpdate({_id: organization._id}, {is_online: true}, {new: true}).lean()
+        org = await Organization.findOneAndUpdate({_id: org._id}, {is_online: true}, {new: true}).lean()
 
         //send response
-        res.status(200).send({status: 'ok', msg: 'success', organization, token})
+        res.status(200).send({status: 'ok', msg: 'success', org, token})
         
     } catch (error) {
         console.log(error)
@@ -306,10 +280,10 @@ router.post('/sign_in', async(req, res) => {
 //endpoint to Logout
 router.post('/logout', authToken, async(req, res) => {
     try {
-        const organizationId = req.user._id
+        const orgId = req.user._id
 
-        // Set guest offline
-        await Organization.findByIdAndUpdate(organizationId, { is_online: false })
+        // Set organization offline
+        await Organization.findByIdAndUpdate(orgId, { is_online: false })
     
         return res.status(200).send({ status: 'ok', msg: 'success' })
 
@@ -320,54 +294,6 @@ router.post('/logout', authToken, async(req, res) => {
 
         return res.status(500).send({status: 'error', msg:'An error occured'})    
     }
-})
-
-
-// endpoint to change password
-router.post('/change_password', authToken, async(req, res)=>{
-    const {old_password, new_password, confirm_new_password} = req.body
-
-    //check if fields are passed correctly
-    if(!old_password || !new_password || !confirm_new_password){
-       return res.status(400).send({status: 'error', msg: 'all fields must be filled'})
-    }
-
-    // get organization document and change password
-    try {
-        const organization =  await Organization.findById(req.user._id).select("password")
-
-        if (!organization) {
-            return res.status(400).send({status:'error', msg:'organization not found'})
-        }
-
-        //Compare old password
-        const check = await bcrypt.compare(old_password, organization.password)
-        if(!check){
-            return res.status(400).send({status:'error', msg:'old password is incorrect'})
-        }
-
-        //Prevent reusing old password
-        const isSamePassword = await bcrypt.compare(new_password, organization.password)
-        if(isSamePassword){
-            return res.status(400).send({status:'error', msg:'New password must be different from the old password'})
-        }
-
-        //Confirm new passwords match
-        if (new_password !== confirm_new_password) {
-            return res.status(400).send({status: 'error', msg: 'Password mismatch'})
-        }
-
-        //Hash new password and update
-        const updatePassword = await bcrypt.hash(confirm_new_password, 10)
-        await Organization.findByIdAndUpdate(req.user._id, {password: updatePassword})
-
-        return res.status(200).send({status: 'ok', msg: 'success'})
-    } catch (error) {
-        if(error.name === 'JsonWebTokenError'){
-        console.log(error)
-        return res.status(401).send({status: 'error', msg: 'Token Verification Failed', error: error.message})
-}
-      return res.status(500).send({status: 'error', msg: 'An error occured', error: error.message})}
 })
 
 
@@ -399,21 +325,21 @@ router.post('/forgot_password', async (req, res) => {
         */
 
         // Fetch organization's email
-        let organization = await Organization.findOne({ email }).lean()
+        let org = await Organization.findOne({ email }).lean()
 
-        if (!organization) {
+        if (!org) {
             return res.status(400).send({ status: 'error', msg: 'No account found with the provided email' });
         }
 
         // Create reset token (expires in 10 min)
         const resetToken = jwt.sign(
-            { _id: organization._id },
+            { _id: org._id },
             process.env.JWT_SECRET,
             { expiresIn: '10m' }
         );
 
         // Send email (or SMS later if implemented)
-        await sendPasswordReset(organization.email /*|| organization.phone_no*/, organization.name_of_organization, resetToken)
+        await sendPasswordResetOrg(org.email /*|| organization.phone_no*/, org.company_name, resetToken)
 
         return res.status(200).send({ status: 'ok', msg: 'Password reset link sent. Please check your email or phone.' })
 
@@ -516,7 +442,7 @@ const resetPasswordCode = req.params.resetPasswordCode
                   <h6 style="display: flex; align-items: center; justify-content: center; font-weight: 200;">Enter the new password
                       you want to use in recovering your account</h6>    
           
-              <form action="http://localhost:1000/guest_auth/reset_password" method="post">
+              <form action="http://localhost:7000/organization_auth/reset_password" method="post">
                   <div class="imgcontainer">
                   </div>
                   <div class="container">

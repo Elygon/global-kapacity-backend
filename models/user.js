@@ -8,16 +8,23 @@ const userSchema = new Schema({
     email: String, 
     phone_no: String,
     password: String,
-    gender: String,
-    date_of_birth: String,
-    profile_img_id: { type: String, default: '' },
-    profile_img_url: { type: String, default: '' },
-    address: String,
+    twoFAPin: String, // 2FA PIN
     authProvider: {
         type: String,
         enum: ['email', 'google', 'apple'],
         default: 'email' // default is normal signup
     },
+
+    // for subscription plans
+    subscription: {
+        plan_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription', default: null },
+        billing_cycle: { type: String, enum: ['monthly', 'quarterly', 'yearly'], default: null },
+        start_date: Date,
+        end_date: Date,
+        status: { type: String, enum: ['inactive', 'active', 'expired'], default: 'inactive' }
+    },
+    
+    // for user's account status
     is_online:{type: Boolean, default: false },
     is_deleted: {type: Boolean, default: false},
     last_login: Number,
@@ -30,7 +37,8 @@ const userSchema = new Schema({
     ban_reason: {type: String, default: ''},
     deletionReason: {
         type: String,
-        default: null}, //Reason provided by the staff when the account is deleted
+        default: null //Reason provided by the staff when the account is deleted
+    }
 }, { timestamps: true, collection: 'users'})
 
 const model = mongoose.model('User', userSchema)

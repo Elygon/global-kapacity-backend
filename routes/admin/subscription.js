@@ -8,11 +8,6 @@ const authToken = require("../../middleware/authToken")
 // CREATE SUBSCRIPTION PLAN (ADMIN ONLY)
 router.post("/create", authToken, async (req, res) => {
     try {
-        // Ensure only admins can create plans
-        if (req.user.role !== "admin") {
-            return res.status(403).send({ status: "error", msg: "Only admins can create subscription plans" })
-        }
-
         const plan = await Subscription.create(req.body)
 
         return res.status(201).json({ status: "ok", msg: "success", data: plan })
@@ -26,10 +21,6 @@ router.post("/create", authToken, async (req, res) => {
 // UPDATE SUBSCRIPTION PLAN (ADMIN ONLY)
 router.post("/update", authToken, async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
-            return res.status(403).send({ status: "error", msg: "Only admins can update subscription plans" })
-        }
-
         const { plan_id, ...updateData } = req.body
 
         if (!plan_id) {
@@ -53,10 +44,6 @@ router.post("/update", authToken, async (req, res) => {
 // ACTIVATE / DEACTIVATE PLAN
 router.post("/toggle", authToken, async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
-            return res.status(403).send({ status: "error", msg: "Only admins can modify plan status" })
-        }
-
         const { plan_id } = req.body
 
         if (!plan_id) {

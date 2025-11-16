@@ -1,8 +1,8 @@
 const mongoose = require('mongoose')
 
 const trainingSchema = new mongoose.Schema({
-    user_id: String,
-    organization_id: String,
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
     title: String,
     tags: {
         type: String,

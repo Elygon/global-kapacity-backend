@@ -4,6 +4,7 @@ const router = express.Router()
 const authToken = require('../../middleware/authToken') // your middleware
 const Organization = require('../../models/organization')
 const OrganizationProfile = require('../../models/organize_profile')
+const UserProfile = require('../../models/user_profile')
 
 const cloudinary = require('../../utils/cloudinary')
 const uploader = require('../../utils/multer')
@@ -160,7 +161,7 @@ router.post('/upload_videos', authToken, uploader.single('file'), async (req, re
 
 
 // endpoint to upload media awards
-router.post('/upload_award', authToken, uploader.single('file'), async (req, res) => {
+router.post('/upload_awards', authToken, uploader.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).send({ status: 'error', msg: 'No file uploaded' })
 
@@ -220,7 +221,7 @@ router.post('/delete_media', authToken, async (req, res) => {
 
 
 // endpoint to fetch all media
-router.post('/media/all', authToken, async (req, res) => {
+router.post('/all_media', authToken, async (req, res) => {
     try {
         // 1. Get organization profile by user ID from token
         const profile = await OrganizationProfile.findOne({ organization_id: req.user._id })

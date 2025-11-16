@@ -9,7 +9,7 @@ const uploader = require('../../utils/multer')
 
 
 
-// Edit Staff Profile
+// Edit Admin Profile
 router.post('/edit', uploader.single('profile_img'), authToken, async (req, res) => {
     const { firstname, lastname, email, phone_no, address, gender, profile_img_url, profile_img_id } = req.body
 
@@ -101,5 +101,54 @@ router.post('/view', authToken, async (req, res) => {
         return res.status(500).send({ status: 'error', msg: 'Error occurred', error: error.message })
     }
 })
+
+
+// endpoint to change password
+router.post('/change_password', authToken, async(req, res)=>{
+    const {old_password, new_password, confirm_new_password} = req.body
+
+    //check if fields are passed correctly
+    if(!old_password || !new_password || !confirm_new_password){
+       return res.status(400).send({status: 'error', msg: 'all fields must be filled'})
+    }
+
+    // get admin document and change password
+    try {
+        const admin =  await Admin.findById(req.user._id).select("password")
+
+        if (!admin) {
+            return res.status(400).send({status:'error', msg:'Admin not found'})
+        }
+
+        //Compare old password
+        const check = await bcrypt.compare(old_password, admin.password)
+        if(!check){
+            return res.status(400).send({status:'error', msg:'old password is incorrect'})
+        }
+
+        //Prevent reusing old password
+        const isSamePassword = await bcrypt.compare(new_password, admin.password)
+        if(isSamePassword){
+            return res.status(400).send({status:'error', msg:'New password must be different from the old password'})
+        }
+
+        //Confirm new passwords match
+        if (new_password !== confirm_new_password) {
+            return res.status(400).send({status: 'error', msg: 'Password mismatch'})
+        }
+
+        //Hash new password and update
+        const updatePassword = await bcrypt.hash(confirm_new_password, 10)
+        await Admin.findByIdAndUpdate(req.user._id, {password: updatePassword})
+
+        return res.status(200).send({status: 'ok', msg: 'success'})
+    } catch (error) {
+        if(error.name === 'JsonWebTokenError'){
+        console.log(error)
+        return res.status(401).send({status: 'error', msg: 'Token Verification Failed', error: error.message})
+}
+      return res.status(500).send({status: 'error', msg: 'An error occured', error: error.message})}
+})
+
 
 module.exports = router

@@ -1,8 +1,9 @@
 const mongoose = require('mongoose')
 
 const jobSchema = new mongoose.Schema({
-    organization_id: String,
-    job_description: String,
+    organization_id: {type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true},
+    title: String,
+    description: String, // job description
     responsibilities: [String],
     requirements: [String],
     preferred_skills: [String],
@@ -30,7 +31,13 @@ const jobSchema = new mongoose.Schema({
             'Sports & Recreation', 'Technology & Software', 'Telecommunications', 'Others' // Default for custom input
         ]
     },
-    custom_industry: { type: String, default: null}
+    custom_industry: { type: String, default: null},
+    location: String,
+    status: { type: String, enum: ['open', 'closed', /*'active', 'pending', 'rejected'*/],
+        default: 'open' // pending as default in future if job listings will require approval first
+    },
+    posted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+    isClosed: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'jobs' })
 
 const model = mongoose.model('Job', jobSchema)

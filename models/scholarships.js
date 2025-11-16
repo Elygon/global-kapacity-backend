@@ -1,10 +1,10 @@
 const mongoose = require('mongoose')
 
 const scholarshipSchema = new mongoose.Schema({
-    user_id: String,
-    organization_id: String, // '$10,000' or '10000'
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
     title: String,
-    amount: String, // 
+    amount: String, // '$10,000' or '10000'
     description: String,
     eligibility_criteria: [String], // list of bullet points
     application_requirements: [String], // list of bullet points

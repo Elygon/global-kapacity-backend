@@ -363,7 +363,9 @@ router.post('/switch', authToken, async(req, res)=>{
                 owner_user_id: user._id,
                 name_of_organization: '',
                 company_reg_no: '',
-                industry: ''
+                industry: '',
+                email: user.email,
+                phone_no: user.phone_no
             })
             await orgProfile.save()
         }

@@ -146,7 +146,7 @@ router.post("/saved", authToken, async (req, res) => {
         const savedJobs = await SavedJob.find({ userId }).populate("jobId").sort({ createdAt: -1 })
 
         if (!savedJobs.length) {
-            return res.status(200).send({ status: 'ok', msg: 'You haven\'t saved any job yet.', count: 0 })
+            return res.status(200).send({ status: 'ok', msg: 'You haven\'t saved any job yet', count: 0 })
         }
 
         res.status(200).send({ status: "ok", msg: "success", count: savedJobs.length, savedJobs })

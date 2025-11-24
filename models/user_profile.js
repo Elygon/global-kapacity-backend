@@ -8,9 +8,9 @@ const userProfileSchema = new Schema({
     date_of_birth: String,
     professional_bio: [{
         profession: String,
-        country_of_residence: String,
-        state_of_residence: String,
-        city_of_residence: String,
+        country: String,
+        state: String,
+        city: String,
         about: String
     }],
     school: [{
@@ -95,7 +95,8 @@ const userProfileSchema = new Schema({
     }],
     name_of_certification: String,
     profile_img_id: { type: String, default: '' },
-    profile_img_url: { type: String, default: '' }
+    profile_img_url: { type: String, default: '' },
+    notificationsEnabled: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'users_profile'})
 
 const model = mongoose.model('UserProfile', userProfileSchema)

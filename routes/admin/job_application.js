@@ -1,5 +1,5 @@
-const express = require("express");
-const router = express.Router();
+const express = require("express")
+const router = express.Router()
 
 const JobApplication = require("../../models/job_application")
 const Job = require("../../models/job")
@@ -14,17 +14,77 @@ const authToken = require("../../middleware/authToken")
 // ==========================
 router.post("/all", authToken, async (req, res) => {
     try {
-        const applications = await JobApplication.find()
-            .populate("jobId", "title posted_by")
+        const apps = await JobApplication.find()
+            .populate("jobId", "title description responsibilities requirements preferred_skills deadline posted_by")
             .populate("applicantId", "firstname lastname email phone_no profile_img_url")
             .sort({ createdAt: -1 })
 
-        return res.status(200).send({ status: "ok", msg: "success", applications })
+        if (!apps.length) {
+            return res.status(200).send({ status: 'ok', msg: 'No applications found.', count: 0 })
+        }
+
+        return res.status(200).send({ status: "ok", msg: "success", count: apps.length, apps })
     } catch (error) {
         console.error(error)
         return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
     }
 })
+
+
+// ==========================
+// 2. GET APPLICATIONS FOR A SPECIFIC JOB
+// ==========================
+router.post("/application", authToken, async (req, res) => {
+    const {jobId} = req.body
+    if (!jobId) {
+        return res.status(400).send({ status: 'error', msg: 'Job ID is required' })
+    }
+
+    try {
+        const job = await Job.findById(jobId)
+        if (!job) {
+            return res.status(404).send({ status: "error", msg: "Job not found" })
+        }
+
+        const apps = await JobApplication.findById({ job_id: jobId })
+        .populate("applicantId", "firstname lastname email phone_no profile_img_url")
+        
+        if (!apps.length) {
+            return res.status(200).send({ status: 'ok', msg: 'No applications found.', count: 0 })
+        }
+
+        return res.status(200).send({ status: "ok", msg: "success", count: apps.length, apps })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
+    }
+})
+
+
+// ==========================
+// 3. GET APPLICATIONS by A SPECIFIC USER
+// ==========================
+router.post("/application", authToken, async (req, res) => {
+    const {userId} = req.body
+    if (!userId) {
+        return res.status(400).send({ status: 'error', msg: 'User ID is required' })
+    }
+
+    try {
+        const apps = await JobApplication.findById({ applicant_id: userId })
+        .populate("jobId", "title description responsibilities requirements preferred_skills deadline posted_by")
+
+        if (!apps.length) {
+            return res.status(200).send({ status: 'ok', msg: 'No applications found.', count: 0 })
+        }
+
+        return res.status(200).send({ status: "ok", msg: "success", count: apps.length, apps })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
+    }
+})
+
 
 
 // ==========================

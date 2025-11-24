@@ -31,13 +31,14 @@ const userSchema = new Schema({
     last_logout: Number, 
     status: {type: String, enum: ["Active", "Suspended", "Deactivated"], default: "Active"},//Status can be 'Active', 'Suspended' or 'Deleted'
     is_verified: { type: Boolean, default: false },
+    is_kip: { type: Boolean, default: false },
     is_blocked: { type: Boolean, default: false },
     block_reason: {type: String, default: ''},
     is_banned: { type: Boolean, default: false },
     ban_reason: {type: String, default: ''},
     deletionReason: {
         type: String,
-        default: null //Reason provided by the staff when the account is deleted
+        default: null //Reason provided by the admin when the account is deleted
     }
 }, { timestamps: true, collection: 'users'})
 

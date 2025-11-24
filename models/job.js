@@ -1,23 +1,10 @@
 const mongoose = require('mongoose')
 
 const jobSchema = new mongoose.Schema({
-    organization_id: {type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true},
+    posted_by: {type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true},
+
+    // Step 1 for Job Posting
     title: String,
-    description: String, // job description
-    responsibilities: [String],
-    requirements: [String],
-    preferred_skills: [String],
-    deadline: String,
-    job_type: { 
-        main: { type: String, enum: [ 'A', 'B' ]},
-        sub: [{
-            type: String, enum: [ 'All', 'Full-Time', 'Part-Time', 'Internship', 'Contract', 'Temporary',
-                'Remote', 'Hybrid', 'Onsite']
-        }]
-    },
-    experience_level: { type: String, enum: [ 'All', 'Entry Level (0-1 year)', 'Junior (1-3 years)',
-        'Mid-Level(3-5 years)', 'Senior (5-10 years)', 'No Experience Required']
-    },
     industry: {
         type: String,
         enum: [
@@ -31,12 +18,50 @@ const jobSchema = new mongoose.Schema({
             'Sports & Recreation', 'Technology & Software', 'Telecommunications', 'Others' // Default for custom input
         ]
     },
-    custom_industry: { type: String, default: null},
-    location: String,
-    status: { type: String, enum: ['open', 'closed', /*'active', 'pending', 'rejected'*/],
-        default: 'open' // pending as default in future if job listings will require approval first
+    custom_industry: { type: String }, // only used if industry === 'Other'
+    employment_type: {
+        type: String,
+        enum: [ 'Full-Time', 'Part-Time', 'Contract', 'Internship', 'Volunteer'],
+        required: true
     },
-    posted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+    work_mode: {
+        type: String,
+        enum: [ 'On-site', 'Remote', 'Hybrid' ],
+        required: true
+    },
+    country: [String],
+    state: [String],
+    salary_range: {
+        currency: String, // front-end ensures valid currency e.g NGN, USD, EUR, GBP
+        from: Number,
+        to: Number
+    },
+    deadline: String,
+
+    // Step 2 Job Posting
+    description: { type: String, maxlength: 150 }, // job description
+    responsibilities: { type: String, maxlength: 150 },
+    requirements: { type: String, maxlength: 150 },
+    preferred_skills: { type: String, maxlength: 150 },
+    email: String,
+
+    // After Job Posting has been submitting
+    is_visible: { type: Boolean, default: false }, // becomes true after admin aproval
+    is_rejected: { type: Boolean, default: false }, // optional
+    rejection_reason: { type: String, default: null },
+
+
+    job_type: { 
+        main: { type: String, enum: [ 'A', 'B' ]},
+        sub: [{
+            type: String, enum: [ 'All', 'Full-Time', 'Part-Time', 'Internship', 'Contract', 'Temporary',
+                'Remote', 'Hybrid', 'Onsite']
+        }]
+    },
+    experience_level: { type: String, enum: [ 'All', 'Entry Level (0-1 year)', 'Junior (1-3 years)',
+        'Mid-Level(3-5 years)', 'Senior (5-10 years)', 'No Experience Required']
+    },
+    location: String,
     isClosed: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'jobs' })
 

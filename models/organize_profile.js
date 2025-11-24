@@ -4,9 +4,9 @@ const Schema = mongoose.Schema
 const orgProfileSchema = new Schema({
     organization_id: { type: mongoose.Schema.Types.ObjectId, ref: "Organizaton", required: true },
     company_location: [{
-        country_located: String,
-        state_located: String,
-        city_located: String,
+        country: String,
+        state: String,
+        city: String,
         street_address: String,
     }],
     company_bio: [{
@@ -43,6 +43,7 @@ const orgProfileSchema = new Schema({
     }],
     profile_img_id: { type: String, default: '' },
     profile_img_url: { type: String, default: '' },
+    notificationsEnabled: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'organizations_profile'})
 
 const model = mongoose.model('OrganizationProfile', orgProfileSchema)

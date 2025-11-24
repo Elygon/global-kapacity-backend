@@ -3,17 +3,16 @@ const mongoose = require('mongoose')
 const scholarshipSchema = new mongoose.Schema({
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+    university: String,
     title: String,
     amount: String, // '$10,000' or '10000'
     description: String,
     eligibility_criteria: [String], // list of bullet points
-    application_requirements: [String], // list of bullet points
+    requirements: [String], // list of bullet points
 
     // for application important dates
-    application: {
-        open_date: Date,
-        deadline: Date
-    },
+    open_date: Date,
+    deadline: Date,
     shortlist_date: Date,
     interview: {
         start_date: Date,
@@ -64,7 +63,11 @@ const scholarshipSchema = new mongoose.Schema({
             'On-Campus', 'Online / Remote', 'Hybrid'
         ]
     },
-    is_active: Boolean
+    status: { type: String, enum: ['open', 'closed', /*'active', 'pending', 'rejected'*/],
+            default: 'open' // pending as default in future if schoarship listings will require approval first
+        },
+    posted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+    isClosed: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'scholarships' })
 
 const model = mongoose.model('Scholarships', scholarshipSchema)

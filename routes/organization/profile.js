@@ -431,4 +431,25 @@ router.post('/change_password', authToken, async(req, res)=>{
 
 
 
+// Toggle notifications for user
+router.post('/toggle', authToken, async(req, res) => {
+    try {
+        const orgId = req.user._id
+        const org = await User.findById(orgId)
+
+        if (!org) {
+            return res.status(404).send({ status: 'error', msg: 'Organization not found' })
+        }
+
+        // Toggle the value
+        org.notificationsEnabled = !org.notificationsEnabled
+
+        await org.save()
+
+        res.status(200).send({ status: 'ok', msg: 'success', notificationsEnabled: org.notificationsEnabled })
+    } catch (error) {
+        return res.status(500).send({ status: 'error', msg: 'Error occurred', error: error.message })
+    }
+})
+
 module.exports = router

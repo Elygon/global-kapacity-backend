@@ -4,24 +4,10 @@ const authToken = require('../../middleware/authToken')
 const FAQ = require('../../models/faq')
 
 
-// Role checker
-const checkRole = (user, allowedRoles = ['Owner', 'Admin', 'Staff'], requiredTask = null) => {
-    if (!allowedRoles.includes(user.role))
-        return false
-    if (user.role === 'Staff' && requiredTask) {
-        if (!Array.isArray(user.task) || !user.task.includes(requiredTask)) return false
-    }
-    return true
-}
 
-
-//Add a new FAQ (Owner/Admin only)
+//Add a new FAQ
 router.post('/add', authToken, async (req, res) => {
     const { question, answer } = req.body
-
-    if (!checkRole(req.user, ['Owner', 'Admin'])) {
-        return res.status(403).send({ status: 'error', msg: 'Access denied. Only Owner/Admin can add FAQ.' })
-    }
 
     if (!question || !answer) {
         return res.status(400).send({ status: 'error', msg: 'Both question and answer are required.' })
@@ -37,13 +23,9 @@ router.post('/add', authToken, async (req, res) => {
 })
 
 
-//Update an existing FAQ (Owner/Admin only)
+//Update an existing FAQ
 router.post('/update', authToken, async (req, res) => {
     const { id, question, answer } = req.body
-
-    if (!checkRole(req.user, ['Owner', 'Admin'])) {
-        return res.status(403).send({ status: 'error', msg: 'Access denied. Only Owner/Admin can update FAQ.' })
-    }
 
     if (!id || (!question && !answer)) {
         return res.status(400).send({ status: 'error', msg: 'FAQ ID and at least one field to update are required.' })
@@ -67,13 +49,9 @@ router.post('/update', authToken, async (req, res) => {
 })
 
 
-// Delete an FAQ (Owner/Admin only)
+// Delete an FAQ
 router.post('/delete', authToken, async (req, res) => {
     const { id } = req.body
-
-    if (!checkRole(req.user, ['Owner', 'Admin'])) {
-        return res.status(403).send({ status: 'error', msg: 'Access denied. Only Owner/Admin can delete FAQ.' })
-    }
 
     if (!id) {
         return res.status(400).send({ status: 'error', msg: 'FAQ ID is required' })
@@ -92,12 +70,8 @@ router.post('/delete', authToken, async (req, res) => {
 })
 
 
-//View all FAQs (accessible to all staff roles)
+//View all FAQs 
 router.post('/all', authToken, async (req, res) => {
-    if (!checkRole(req.user, ['Owner', 'Admin', 'Staff'])) {
-        return res.status(403).send({ status: 'error', msg: 'Access denied.' })
-    }
-
     try {
         const faqs = await FAQ.find().sort({ timestamp: -1 })
         return res.status(200).send({ status: 'ok', msg: 'success', faqs })
@@ -110,10 +84,6 @@ router.post('/all', authToken, async (req, res) => {
 //View a single FAQ by ID
 router.post('/view', authToken, async (req, res) => {
     const { id } = req.body
-
-    if (!checkRole(req.user, ['Owner', 'Admin', 'Staff'])) {
-        return res.status(403).send({ status: 'error', msg: 'Access denied.' })
-    }
 
     if (!id) {
         return res.status(400).send({ status: 'error', msg: 'FAQ ID is required.' })

@@ -175,7 +175,7 @@ const sendAdminAccountMail = async (email, password, firstname, role) => {
             to: email,
             subject: `Welcome to Global Kapacity as ${role}`,
             html: `
-                <h2>Hi ${fullname},</h2>
+                <h2>Hi ${firstname},</h2>
                 <p>Your ${role} account has been successfully created.</p>
                 <p>Here are your login details:</p>
                 <ul>
@@ -196,152 +196,167 @@ const sendAdminAccountMail = async (email, password, firstname, role) => {
 }
 
 
-// Guest Booking Confirmation
-const sendGuestBookingMail = async (
-    email, fullname, roomName, roomType, checkInDate, checkOutDate, noOfGuests, amount) => {
-        try {
-            const info = await transport.sendMail({
-                from: `"Classic Crown Hotel"  <${process.env.MAIL_USER}>`,
-                to: email,
-                subject: "Room Booking Confirmation",
-                html: `
-                    <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Room Booking Confirmed</h2>
-                    <p>Dear ${fullname},</p>
-                    <p>Your booking has been successfully confirmed. Here are the details:</p>
-                    <ul>
-                        <li><b>Room Name:</b> ${roomName}</li>
-                        <li><b>Room Type:</b> ${roomType}</li>
-                        <li><b>Check-in:</b> ${new Date(checkInDate).toDateString()}</li>
-                        <li><b>Check-out:</b> ${new Date(checkOutDate).toDateString()}</li>
-                        <li><b>No. of Guests:</b> ${noOfGuests}</li>
-                        <li><b>Amount:</b> ₦${amount}</li>
-                    </ul>
-                    <p>Status: <b>Booked</b></p>
-                    <p>We look forward to hosting you!</p>
-                    <p>Warm regards,<br/>Hotel Reservations Team</p>
-                </div>
-            `
-        })
-
-        console.log("Booking Confirmation Email sent:", info.response)
-        return { status: "ok", msg: "Email sent" }
-    } catch (error) {
-        console.error("Error sending booking email:", error)
-        return { status: "error", msg: "Failed to send email", error }
-    }
-}
-
-
-// Guest Booking Status Update
-const sendGuestBookingStatusMail = async (email, fullname, roomName, status) => {
+// KIP Application Approved
+const sendKipApprovalMail = async (email, organization_name) => {
     try {
         const info = await transport.sendMail({
-            from: `"Classic Crown Hotel" <${process.env.MAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Booking Status Updated: ${status}`,
+            subject: `Your KIP Application Has Been Approved 🎉`,
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Booking Status Update</h2>
-                    <p>Dear ${fullname},</p>
-                    <p>Your booking for <b>${roomName}</b> has been updated.</p>
-                    <p><b>New Status:</b> ${status}</p>
-                    <p>Thank you for choosing our services!</p>
-                    <p>Warm regards,<br/>Hotel Reservations Team</p>
-                </div>
-            `
-        })
+                    <h2>Application Approved 🎉</h2>
+                    <p>Dear ${organization_name},</p>
 
-        console.log("Booking Status Email sent:", info.response)
-        return { status: "ok", msg: "Email sent" }
-    } catch (error) {
-        console.error("Error sending booking status email:", error)
-        return { status: "error", msg: "Failed to send email", error }
-    }
-}
+                    <p>We're excited to inform you that your application to join the 
+                    <b>Kapacity Impact Partners (KIP)</b> program has been successfully approved.</p>
 
+                    <p>Welcome aboard! We're looking forward to the positive impact your organization will contribute.</p>
 
-// Guest Booking Cancellation
-const sendGuestBookingCancellationMail = async (email, fullname, roomName) => {
-    try {
-        const info = await transport.sendMail({
-            from: `"Classic Crown Hotel"  <${process.env.MAIL_USER}>`,
-            to: email,
-            subject: "Booking Cancelled",
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Booking Cancelled</h2>
-                    <p>Dear ${fullname},</p>
-                    <p>Your booking for <b>${roomName}</b> has been successfully cancelled.</p>
-                    <p>If this was a mistake, you can rebook anytime through our website.</p>
-                    <p>Warm regards,<br/>Hotel Reservations Team</p>
-                </div>
-            `
-       })
-
-       console.log("Booking Cancellation Email sent:", info.response)
-       return { status: "ok", msg: "Email sent" }
-    } catch (error) {
-        console.error("Error sending cancellation email:", error)
-        return { status: "error", msg: "Failed to send email", error }
-    }
-}
-
-
-// Guest Event Approved
-const sendGuestEventApprovalMail = async (email, fullname, date, total_price) => {
-    try {
-        const info = await transport.sendMail({
-            from: `"Classic Crown Hotel" <${process.env.MAIL_USER}>`,
-            to: email,
-            subject: `Your Event Has Been Approved`,
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Event Approved 🎉</h2>
-                    <p>Dear ${fullname},</p>
-                    <p>Your event request has been approved!</p>
-                    <ul>
-                        <li><b>Date:</b> ${new Date(date).toDateString()}</li>
-                        ${total_price > 0 ? `<li><b>Total Price:</b> ₦${total_price.toLocaleString()}</li>` : ''}
-                    </ul>
-                    <p>We're excited to host your event. Please check your dashboard for more details.</p>
                     <br/>
-                    <p>Best regards,<br/>Classic Crown Hotel Management</p>
+                    <p>Best regards,<br/>The KIP Management Team</p>
                 </div>
             `
         })
-        console.log("Guest Event Approval Email sent:", info.response)
+
+        console.log("KIP Approval Email Sent:", info.response)
+
     } catch (error) {
-        console.error("Error sending guest event approval email:", error)
+        console.error("Error sending KIP approval email:", error)
     }
 }
 
 
-// Guest Event Rejected
-const sendGuestEventRejectionMail = async (email, fullName, eventName, reason) => {
+// KIP Application Rejected
+const sendKipRejectionMail = async (email, organization_name, reason) => {
     try {
         const info = await transport.sendMail({
-            from: `"Classic Crown Hotel" <${process.env.MAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Event Request Rejected: ${eventName}`,
+            subject: `Update on Your KIP Application`,
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Event Rejected ❌</h2>
-                    <p>Dear ${fullName},</p>
-                    <p>Unfortunately, your event request has been declined.</p>
-                    <ul>
-                        <li><b>Event:</b> ${eventName}</li>
-                        <li><b>Reason:</b> ${reason || "Not specified"}</li>
-                    </ul>
-                    <p>You may submit a new request or contact us for clarification.</p>
+                    <h2>Application Update</h2>
+                    <p>Dear ${organization_name},</p>
+
+                    <p>Thank you for taking the time to apply for the 
+                    <b>Kapacity Impact Partners (KIP)</b> program.</p>
+
+                    <p>After reviewing your submission, we're unable to approve your application at this moment.</p>
+
+                    ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
+
+                    <p>You may reapply in the future once the required conditions are met.</p>
+
                     <br/>
-                    <p>Regards,<br/>Classic Crown Hotel Management</p>
+                    <p>Best regards,<br/>The KIP Management Team</p>
                 </div>
             `
         })
-        console.log("Guest Event Rejection Email sent:", info.response)
+
+        console.log("KIP Rejection Email Sent:", info.response)
+
     } catch (error) {
-        console.error("Error sending guest event rejection email:", error)
+        console.error("Error sending KIP rejection email:", error)
+    }
+}
+
+
+
+// Job Listing Approved
+const sendJobApprovalMail = async (email, company_name, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Job Listing Has Been Approved ✔️`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Job Listing Approved ✔️</h2>
+                    <p>Dear ${company_name},</p>
+
+                    <p>Your job listing titled <b>${title}</b> has been reviewed and 
+                    <b>approved</b> by our platform administrators.</p>
+
+                    <p>The listing is now live and visible to qualified candidates across the platform.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>The Job Review Team</p>
+                </div>
+            `
+        })
+
+        console.log("Job Approval Email Sent:", info.response)
+
+    } catch (error) {
+        console.error("Error sending Job Approval Email:", error)
+    }
+}
+
+
+
+// Job Listing Rejected
+const sendJobRejectionMail = async (email, company_name, title, reason) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Job Listing Could Not Be Approved`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Job Listing Rejected ❌</h2>
+                    <p>Dear ${company_name},</p>
+
+                    <p>Your job listing titled <b>${title}</b> has been reviewed, 
+                    but cannot be approved at this time.</p>
+
+                    ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
+
+                    <p>You may update the job posting and resubmit it for review again.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>The Job Review Team</p>
+                </div>
+            `
+        })
+
+        console.log("Job Rejection Email Sent:", info.response)
+
+    } catch (error) {
+        console.error("Error sending Job Rejection Email:", error)
+    }
+}
+
+
+
+// Job Listing Hidden (taken down after complaints or suspicious observations)
+const sendJobHiddenMail = async (email, company_name, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Job Listing Has Been Temporarily Taken Down`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Job Listing Hidden ⚠️</h2>
+                    <p>Dear ${company_name},</p>
+
+                    <p>Your job listing titled <b>${title}</b> has been hidden from public view.</p>
+
+                    <p>This action was taken due to reports or activity that require further review.</p>
+
+                    <p>You may update or clarify the posting if needed and request a re-review.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>The Job Safety Team</p>
+                </div>
+            `
+        })
+
+        console.log("Job Hidden Email Sent:", info.response)
+
+    } catch (error) {
+        console.error("Error sending Job Hidden Email:", error)
     }
 }
 
@@ -575,13 +590,13 @@ module.exports = {
     sendPasswordResetOrg,
     sendPasswordResetAdmin,
     sendAdminAccountMail,
-    sendGuestBookingMail,
-    sendGuestBookingStatusMail,
-    sendGuestBookingCancellationMail,
+    sendKipApprovalMail,
+    sendKipRejectionMail,
+    sendJobApprovalMail,
+    sendJobRejectionMail,
+    sendJobHiddenMail,
     sendGuestEventRequestMail,
     sendGuestEventCancellationMail,
-    sendGuestEventApprovalMail,
-    sendGuestEventRejectionMail,
     sendGuestEventCompletionMail,
     sendPaymentSuccessMail,
     sendPaymentSuccessMailOrg

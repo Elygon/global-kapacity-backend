@@ -3,6 +3,7 @@ const router = express.Router()
 
 const authToken = require("../../middleware/authToken")
 const KIP = require("../../models/kip")
+const { preventFreemiumKIP } = require("../../middleware/freemiumlimit")
 
 
 

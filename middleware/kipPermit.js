@@ -11,4 +11,4 @@ const canPostOpportunities = async (req, res, next) => {
     next() // User (individual or organization ) is allowed to post
 }
 
-modules.exports = { canPostOpportunities }
+module.exports = { canPostOpportunities }

@@ -28,7 +28,7 @@ const preventFreemiumSendMessage = async (req, res, next) => {
 }
 
 // Export both
-modules.exports = {
+module.exports = {
     preventFreemiumKIP,
     preventFreemiumSendMessage
 }

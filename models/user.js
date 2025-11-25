@@ -17,11 +17,10 @@ const userSchema = new Schema({
 
     // for subscription plans
     subscription: {
-        plan_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription', default: null },
-        billing_cycle: { type: String, enum: ['monthly', 'quarterly', 'yearly'], default: null },
+        plan: { type: String, enum: ['freemium', 'premium'], default: 'freemium' },
         start_date: Date,
         end_date: Date,
-        status: { type: String, enum: ['inactive', 'active', 'expired'], default: 'inactive' }
+        isActive: { type: Boolean, default: true }
     },
     
     // for user's account status

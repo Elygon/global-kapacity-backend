@@ -36,6 +36,7 @@ app.use(express.urlencoded({extended: true}))
 //user routes
 app.use('/user_auth', require('./routes/user/auth'))
 app.use('/user_profile', require('./routes/user/profile'))
+app.use('/user_news', require('./routes/user/news'))
 app.use('/user_kip_application', require('./routes/user/kip_application'))
 app.use('/user_kip', require('./routes/user/kip'))
 app.use('/user_job', require('./routes/user/job'))
@@ -57,6 +58,7 @@ app.use('/search', require('./routes/search/search'))
 //organization routes
 app.use('/organization_auth', require('./routes/organization/auth'))
 app.use('/organization_profile', require('./routes/organization/profile'))
+app.use('/organization_news', require('./routes/organization/news'))
 app.use('/organization_kip_application', require('./routes/organization/kip_application'))
 app.use('/organization_kip', require('./routes/organization/kip'))
 app.use('/organization_job', require('./routes/organization/job'))
@@ -74,6 +76,7 @@ app.use('/organization_payment', require('./routes/organization/payment'))
 app.use('/admin_masterAdmin', require('./routes/admin/masterAdmin'))
 app.use('/admin_auth', require('./routes/admin/auth'))
 app.use('/admin_profile', require('./routes/admin/profile'))
+app.use('/admin_news', require('./routes/admin/news'))
 app.use('/admin_user', require('./routes/admin/user'))
 app.use('/admin_organization', require('./routes/admin/organization'))
 app.use('/admin_kip_application', require('./routes/admin/kip_application'))
@@ -87,17 +90,6 @@ app.use('/admin_customer_support', require('./routes/admin/customer_support'))
 app.use('/admin_bug_report', require('./routes/admin/bug_report'))
 app.use('/admin_subscription', require('./routes/admin/subscription'))
 
-/*
-app.use('/guest_order', require('./routes/guest/order'))
-app.use('/guest_service', require('./routes/guest/service')
-*/
-
-/*
-//staff routes
-app.use('/staff_order', require('./routes/staff/order'))
-app.use('/staff_event', require('./routes/staff/event'))
-app.use('/staff_hall', require('./routes/staff/hall'))
-*/
 
 const port = process.env.PORT || 7000
 app.listen(port , ()=>{

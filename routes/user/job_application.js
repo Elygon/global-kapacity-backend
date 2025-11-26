@@ -7,12 +7,13 @@ const uploader = require('../../utils/multer')
 const Job = require("../../models/job")
 const JobApplication = require("../../models/job_application")
 const authToken = require("../../middleware/authToken") // your auth middleware
+const { preventFreemiumDetailView } = require("../../middleware/freemiumlimit")
 
 
 // ==========================
 // 1. APPLY FOR A JOB
 // ==========================
-router.post("/apply", authToken, uploader.fields([
+router.post("/apply", authToken, preventFreemiumDetailView, uploader.fields([
     { name: "resume", maxCount: 1 },
     { name: "coverLetter", maxCount: 1 }
 ]), async (req, res) => {
@@ -79,7 +80,7 @@ router.post("/apply", authToken, uploader.fields([
 // ==========================
 // 2. GET ALL APPLICATIONS BY THE USER
 // ==========================
-router.post("/my_applications", authToken, async (req, res) => {
+router.post("/my_applications", authToken, preventFreemiumDetailView, async (req, res) => {
     try {
         const userId = req.user._id
         const applications = await JobApplication.find({ applicantId: userId })
@@ -97,7 +98,7 @@ router.post("/my_applications", authToken, async (req, res) => {
 // ==========================
 // 3. GET A SPECIFIC APPLICATION
 // ==========================
-router.post("/application", authToken, async (req, res) => {
+router.post("/application", authToken, preventFreemiumDetailView, async (req, res) => {
     try {
         const { applicationId } = req.body
         const userId = req.user._id
@@ -125,7 +126,7 @@ router.post("/application", authToken, async (req, res) => {
 // ==========================
 // 4. WITHDRAW AN APPLICATION
 // ==========================
-router.post("/withdraw", authToken, async (req, res) => {
+router.post("/withdraw", authToken, preventFreemiumDetailView, async (req, res) => {
     try {
         const { applicationId } = req.body
         const userId = req.user._id

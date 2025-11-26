@@ -5,6 +5,7 @@ const Job = require("../../models/job")
 const SavedJob = require("../../models/saved_job")
 const authToken = require("../../middleware/authToken")
 const { getDateFromPeriod } = require("../../functions/dateGetter")
+const { preventFreemiumDetailView } = require("../../middleware/freemiumlimit")
 
 
 // ==========================
@@ -86,7 +87,7 @@ router.post("/search", /* authToken, */ async (req, res) => {
 // ==========================
 // 3. View single job
 // ==========================
-router.post("/view",  /*authToken,*/ async (req, res) => {
+router.post("/view",  authToken, preventFreemiumDetailView, async (req, res) => {
     try {
         const { jobId } = req.body
 
@@ -103,7 +104,7 @@ router.post("/view",  /*authToken,*/ async (req, res) => {
 // ==========================
 // 4. Save a job
 // ==========================
-router.post("/save", authToken, async (req, res) => {
+router.post("/save", authToken, preventFreemiumDetailView, async (req, res) => {
     try {
         const { jobId } = req.body
         const userId = req.user._id
@@ -127,7 +128,7 @@ router.post("/save", authToken, async (req, res) => {
 // ==========================
 // 5. Unsave a job
 // ==========================
-router.post("/unsave", authToken, async (req, res) => {
+router.post("/unsave", authToken, preventFreemiumDetailView, async (req, res) => {
     try {
         const { jobId } = req.body // the job to unsave
         const userId = req.user._id
@@ -152,7 +153,7 @@ router.post("/unsave", authToken, async (req, res) => {
 // ==========================
 // 6. List saved jobs
 // ==========================
-router.post("/saved", authToken, async (req, res) => {
+router.post("/saved", authToken, preventFreemiumDetailView, async (req, res) => {
     try {
         const userId = req.user._id
         const savedJobs = await SavedJob.find({ userId }).populate("jobId").sort({ createdAt: -1 })

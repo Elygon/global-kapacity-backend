@@ -27,7 +27,7 @@ const preventFreemiumKIP = async (req, res, next) => {
       
  // Middleware 2: Prevent freemium users from sending messages 
 const preventFreemiumSendMessage = async (req, res, next) => {
-    const sender = await getAccount.findById(req.user._id, req.user.role)
+    const sender = await getAccount(req.user._id, req.user.role)
     if (!sender) {
         return res.status(404).send({ status: 'error', msg: 'Account not found' })
     }
@@ -51,8 +51,27 @@ const preventFreemiumSendMessage = async (req, res, next) => {
     next()
 }
 
+
+// Middleware 3: Prevent freemium users from viewing detailed opportunities
+const preventFreemiumDetailView = async (req, res, next) => {
+    const account = await getAccount(req.user._id, req.user.role)
+
+    if (!account) {
+        return res.status(404).send({ status: 'error', msg: 'Account not found' })
+    }
+
+    // If freemium, block detailed view
+    if (account.subscription.plan === 'freemium') {
+        return res.status(403).send({ status: 'error', msg: 'Freemium Users cannot view' })
+    }
+
+    // Premium users can access
+    next()
+}
+
 // Export both
 module.exports = {
     preventFreemiumKIP,
-    preventFreemiumSendMessage
+    preventFreemiumSendMessage,
+    preventFreemiumDetailView
 }

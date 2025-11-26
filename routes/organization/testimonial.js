@@ -20,7 +20,7 @@ router.post('/create', authToken, async (req, res) => {
             org: req.user._id,
             comment,
             rating,
-            timestamp: Date.now()
+            status: 'pending'
         })
 
         await testimonial.save()
@@ -40,8 +40,8 @@ router.post('/create', authToken, async (req, res) => {
 router.post('/all', async (req, res) => {
     try {
         // fetch all public testimonials
-        const testimonials = await Testimonial.find().populate('user', 'firstname lastname email')
-        .populate('organization', 'company_name email').sort({ timestamp: -1 })
+        const testimonials = await Testimonial.find({ status: 'approved' }).populate('user', 'firstname lastname email')
+        .populate('organization', 'company_name email').sort({ createdAt: -1 })
 
         if (!testimonials.length) {
             return res.status(200).send({ status: 'ok', msg: 'Testimonials not found', count: 0, testimonials: [] })
@@ -59,7 +59,7 @@ router.post('/all', async (req, res) => {
 router.post('/mine', authToken, async (req, res) => {
     try {
         // fetch all testimonials
-        const testimonials = await Testimonial.find({ org: req.user._id }).sort({ timestamp: -1 })
+        const testimonials = await Testimonial.find({ org: req.user._id }).sort({ createdAt: -1 })
 
         if (!testimonials.length) {
             return res.status(200).send({ status: 'ok', msg: 'You have not submitted any testimonials yet.', count: 0 })

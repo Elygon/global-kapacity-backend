@@ -33,7 +33,7 @@ const preventFreemiumSendMessage = async (req, res, next) => {
     }
 
     // premium - allow 
-    if (sender.subscription_plan === 'premium') {
+    if (sender.subscription.plan === 'premium') {
         return next()
     }
 
@@ -46,7 +46,7 @@ const preventFreemiumSendMessage = async (req, res, next) => {
     })
 
     if (!receivedBefore) {
-        return res.status(400).send({ status: 'error', msg: 'Freemium accounts cannot send messages unless they are replying.' })
+        return res.status(403).send({ status: 'error', msg: 'Freemium accounts cannot send messages unless they are replying.' })
     }
     next()
 }

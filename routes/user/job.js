@@ -11,9 +11,21 @@ const { getDateFromPeriod } = require("../../functions/dateGetter")
 // 1. Browse all jobs
 // ==========================
 router.post("/browse", /*authToken,*/ async (req, res) => {
+    /*const { pagec } = req.body
+
+    // validate page number
+    if (!pagec || typeof pagec !== 'number' || pagec < 1) {
+        return res.status(400).send({ status: 'error', msg: 'pagec is required'})
+    }*/
     try {
-        const jobs = await Job.find().sort({ createdAt: -1 })
-        res.status(200).send({ status: "ok", msg: "success", jobs })
+        // fetch jobs with pagination
+        const jobs = await Job.find().sort({ createdAt: -1 })/*.skip((pagec - 1) * 10).limit(10).lean()
+
+        if(jobs.length === 0) {
+            return res.status(200).send({ status: 'ok', msg: 'No Jobs found', count: 0, jobs: []})
+        }*/
+
+        res.status(200).send({ status: "ok", msg: "success", /*count: jobs.length,*/ jobs })
     } catch (error) {
         res.status(500).send({ status: "error", message: "Server error", error: error.message })
     }

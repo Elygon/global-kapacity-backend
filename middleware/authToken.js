@@ -49,6 +49,11 @@ const auth = async (req, res, next) => {
       // If no user matches that token, deny access
       if (!user) return res.status(401).json({ status: 'error', msg: 'User not found' })
 
+      // If user account is blocked or deleted, deny access
+      if (user.is_blocked || user.is_deleted)
+        return res.status(403).json({ status: 'error', msg: 'User account blocked or deleted' })
+
+
       // Attach user info and role ("user") to the request
       req.user = { ...user, from: 'user' }
 
@@ -68,7 +73,7 @@ const auth = async (req, res, next) => {
       if (!organization) return res.status(401).json({ status: 'error', msg: 'Organization not found' })
 
       // If organization account is blocked or deleted, deny access
-      if (organization.isBlocked || organization.isDeleted)
+      if (organization.is_blocked || organization.is_deleted)
         return res.status(403).json({ status: 'error', msg: 'Organization account blocked or deleted' })
 
       // Attach organization info and role ("organization") to the request
@@ -90,7 +95,7 @@ const auth = async (req, res, next) => {
       if (!admin) return res.status(401).json({ status: 'error', msg: 'Admin not found' })
 
       // If admin account is blocked or deleted, deny access
-      if (admin.isBlocked || admin.isDeleted)
+      if (admin.is_blocked || admin.is_deleted)
         return res.status(403).json({ status: 'error', msg: 'Admin account blocked or deleted' })
 
       // Attach admin info and role ("admin") to the request

@@ -2,6 +2,7 @@ const express = require("express")
 const router = express.Router()
 
 const authToken = require("../../middleware/authToken")
+const { isPremiumOrganization } = require("../../middleware/opportunityPost")
 const Job = require("../../models/job")
 const JobApplication = require("../../models/job_application")
 
@@ -10,7 +11,7 @@ const JobApplication = require("../../models/job_application")
 // ==========================
 // 1. GET ALL APPLICANTS FOR A SPECIFIC JOB
 // ==========================
-router.post("/applicants", authToken, async (req, res) => {
+router.post("/applicants", authToken, isPremiumOrganization, async (req, res) => {
     try {
         const { jobId } = req.body
         const orgId = req.user._id
@@ -36,7 +37,7 @@ router.post("/applicants", authToken, async (req, res) => {
 // ==========================
 // 2. GET A SINGLE APPLICANT APPLICATION
 // ==========================
-router.post("/applicant", authToken, async (req, res) => {
+router.post("/applicant", authToken, isPremiumOrganization, async (req, res) => {
     try {
         const { jobId, applicationId } = req.body
         const orgId = req.user._id
@@ -66,7 +67,7 @@ router.post("/applicant", authToken, async (req, res) => {
 // ==========================
 // 3. UPDATE APPLICATION STATUS
 // ==========================
-router.post("/applicant_status", authToken, async (req, res) => {
+router.post("/applicant_status", authToken, isPremiumOrganization, async (req, res) => {
     try {
         const { jobId, applicationId, status } = req.body
         const orgId = req.user._id
@@ -98,7 +99,7 @@ router.post("/applicant_status", authToken, async (req, res) => {
 // ==========================
 // 4. DOWNLOAD APPLICANT CV
 // ==========================
-router.post("/applicant_cv", authToken, async (req, res) => {
+router.post("/applicant_cv", authToken, isPremiumOrganization, async (req, res) => {
     try {
         const { jobId, applicationId } = req.body
         const orgId = req.user._id

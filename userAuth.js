@@ -544,7 +544,7 @@ const resetPasswordCode = req.params.resetPasswordCode
 router.post('/delete', authToken, async(req, res) => {
     try {
         //Find the user and delete the account
-        const deleted = await Guest.findByIdAndDelete(req.user._id)
+        const deleted = await User.findByIdAndDelete(req.user._id)
 
         //Check if the user exists and was deleted
         if(!deleted)

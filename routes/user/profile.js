@@ -380,7 +380,7 @@ router.post('/switch', authToken, async(req, res)=>{
       return res.status(500).send({status: 'error', msg: 'An error occured', error: error.message})}
 })
 
-
+/*
 // endpoint to change password
 router.post('/change_password', authToken, async(req, res)=>{
     const {old_password, new_password, confirm_new_password} = req.body
@@ -427,7 +427,7 @@ router.post('/change_password', authToken, async(req, res)=>{
 }
       return res.status(500).send({status: 'error', msg: 'An error occured', error: error.message})}
 })
-
+*/
 
 // Toggle notifications for user
 router.post('/toggle', authToken, async(req, res) => {

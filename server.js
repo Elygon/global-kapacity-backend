@@ -33,8 +33,12 @@ app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
 
+// auth routes
+app.use('/auth_userAuth', require('./routes/auth/userAuth'))
+app.use('/auth_orgAuth', require('./routes/auth/orgAuth'))
+app.use('/auth_generalAuth', require('./routes/auth/generalAuth'))
+
 //user routes
-app.use('/user_auth', require('./routes/user/auth'))
 app.use('/user_profile', require('./routes/user/profile'))
 app.use('/user_news', require('./routes/user/news'))
 app.use('/user_comment', require('./routes/user/comment'))
@@ -57,7 +61,6 @@ app.use('/user_payment', require('./routes/user/payment'))
 app.use('/search', require('./routes/search/search'))
 
 //organization routes
-app.use('/organization_auth', require('./routes/organization/auth'))
 app.use('/organization_profile', require('./routes/organization/profile'))
 app.use('/organization_news', require('./routes/organization/news'))
 app.use('/organization_comment', require('./routes/organization/comment'))

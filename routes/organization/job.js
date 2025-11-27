@@ -3,13 +3,13 @@ const router = express.Router()
 
 const authToken = require('../../middleware/authToken')
 const Job = require('../../models/job')
-const { canPostOpportunities } = require("../../middleware/kipPermit")
+const { isPremiumOrganization } = require("../../middleware/opportunityPost")
 
 
 // ==========================
 // STEP 1: POST A JOB
 // ==========================
-router.post("/step_one", authToken, canPostOpportunities, async (req, res) => {
+router.post("/step_one", authToken, isPremiumOrganization, async (req, res) => {
     const { title, industry, employment_type, work_mode, country, state, salary_range, deadline } = req.body
 
     if ( !title || !industry || !employment_type || !work_mode || !country || !state || !salary_range || !deadline ) {
@@ -41,7 +41,7 @@ router.post("/step_one", authToken, canPostOpportunities, async (req, res) => {
 // ==========================
 // STEP 2: POST A JOB
 // ==========================
-router.post("/step_two", authToken, canPostOpportunities, async (req, res) => {
+router.post("/step_two", authToken, isPremiumOrganization, async (req, res) => {
     const { jobId, description, responsibilities, requirements, preferred_skills, email } = req.body
     if (!jobId || !description || !responsibilities || !requirements || !preferred_skills || !email ) {
         return res.status(404).send({ status: 'error', msg: "All fields are required" })
@@ -75,7 +75,7 @@ router.post("/step_two", authToken, canPostOpportunities, async (req, res) => {
 // =========================================
 // STEP 3: JOB PREVIEW
 // =========================================
-router.post('/preview', authToken, canPostOpportunities, async (req, res) => {
+router.post('/preview', authToken, isPremiumOrganization, async (req, res) => {
     const { jobId } = req.body
 
     try {
@@ -99,7 +99,7 @@ router.post('/preview', authToken, canPostOpportunities, async (req, res) => {
 // =========================================
 // PUBLISH JOB
 // =========================================
-router.post('/publish', authToken, canPostOpportunities, async (req, res) => {
+router.post('/publish', authToken, isPremiumOrganization, async (req, res) => {
     const { jobId } = req.body
     
     try {
@@ -122,7 +122,7 @@ router.post('/publish', authToken, canPostOpportunities, async (req, res) => {
 // =========================================
 // GET ALL JOBS CREATED BY THIS ORGANIZATION
 // =========================================
-router.post('/all', authToken, async (req, res) => {
+router.post('/all', authToken, isPremiumOrganization, async (req, res) => {
     try {
         const jobs = await Job.find({ posted_by: req.user._id }).sort({ date_posted: -1 })
 
@@ -144,7 +144,7 @@ router.post('/all', authToken, async (req, res) => {
 // =========================================
 // VIEW A SPECIFIC JOB
 // =========================================
-router.post('/view', authToken, async (req, res) => {
+router.post('/view', authToken, isPremiumOrganization, async (req, res) => {
     const { jobId } = req.body
 
     if (!jobId)
@@ -171,7 +171,7 @@ router.post('/view', authToken, async (req, res) => {
 // =========================================
 // UPDATE A JOB INFO
 // =========================================
-router.post('/update', authToken, async (req, res) => {
+router.post('/update', authToken, isPremiumOrganization, async (req, res) => {
     const { jobId, ...updateData } = req.body
     
     if (!jobId)
@@ -202,7 +202,7 @@ router.post('/update', authToken, async (req, res) => {
 // =========================================
 // CLOSE A JOB POSTING
 // =========================================
-router.post('/close', authToken, async (req, res) => {
+router.post('/close', authToken, isPremiumOrganization, async (req, res) => {
     const { jobId } = req.body
 
     if (!jobId)
@@ -233,7 +233,7 @@ router.post('/close', authToken, async (req, res) => {
 // =========================================
 // DELETE JOB POSTING
 // =========================================
-router.post('/delete', authToken, async (req, res) => {
+router.post('/delete', authToken, isPremiumOrganization, async (req, res) => {
     const { jobId } = req.body
 
     if (!jobId)

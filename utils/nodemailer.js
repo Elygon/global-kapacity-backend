@@ -13,48 +13,47 @@ const transport = nodemailer.createTransport({
 
 
 // OTP Email (User)
-const sendOtpEmail = async (email, firstname, otp) => {
-  try {
-    const info = await transport.sendMail({
-      from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
-      to: email,
-      subject: "Your verification code",
-      html: `<div>
-        <p>Hi ${firstname},</p>
-        <p>Your verification code is:</p>
-        <h2>${otp}</h2>
-        <p>This code will expire in 10 minutes.</p>
-      </div>`
-    });
+const sendOtpEmail = async (email, firstname, otp, expiresInMinutes = 15) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "Your verification code",
+            html: `<div>
+                <p>Hi ${firstname},</p>
+                <p>Your verification code is:</p>
+                <h2>${otp}</h2>
+                <p>This code will expire in ${expiresInMinutes} minutes.</p>
+            </div>`
+        })
 
-    console.log("OTP email sent:", info.response);
-  } catch (error) {
-    console.error("Error sending OTP email:", error);
-    return { msg: "Error sending OTP email", error };
-  }
+        console.log("OTP email sent:", info.response);
+    } catch (error) {
+        console.error("Error sending OTP email:", error);
+        return { msg: "Error sending OTP email", error };
+    }
 }
 
-
 // OTP Email (Organization)
-const sendOtpEmailOrg = async (email, company_name, otp) => {
-  try {
-    const info = await transport.sendMail({
-      from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
-      to: email,
-      subject: "Your verification code",
-      html: `<div>
-        <p>Hi ${company_name},</p>
-        <p>Your verification code is:</p>
-        <h2>${otp}</h2>
-        <p>This code will expire in 10 minutes.</p>
-      </div>`
-    });
+const sendOtpEmailOrg = async (email, company_name, otp, expiresInMinutes = 15) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "Your verification code",
+            html: `<div>
+                <p>Hi ${company_name},</p>
+                <p>Your verification code is:</p>
+                <h2>${otp}</h2>
+                <p>This code will expire in ${expiresInMinutes} minutes.</p>
+            </div>`
+        })
 
-    console.log("OTP email sent:", info.response);
-  } catch (error) {
-    console.error("Error sending OTP email:", error);
-    return { msg: "Error sending OTP email", error };
-  }
+        console.log("OTP email sent:", info.response)
+    } catch (error) {
+        console.error("Error sending OTP email:", error)
+        return { msg: "Error sending OTP email", error }
+    }
 }
 
 // Password Reset Email (User)

@@ -11,6 +11,79 @@ const VALID_CHANNELS = ['email', 'sms', 'whatsapp']
 
 
 
+
+// google signup/login endpoint
+router.post('/google', async (req, res) => {
+  try {
+    const { email, firstName, lastName } = req.body; 
+    // NOTE: frontend should send these for now instead of verifying with Google OAuth library
+
+    // Check if user already exists
+    let user = await User.findOne({ email, authProvider: 'google' });
+
+    if (!user) {
+      // Create new user if not exist
+      user = await User.create({
+        firstName,
+        lastName,
+        email,
+        authProvider: 'google',
+        isVerified: true, // assuming Google users are auto-verified
+      })
+    }
+
+    // Generate JWT token using your token util
+    const token = jwt.generateToken({ id: user._id })
+
+    return res.status(200).send({
+      status: 'ok',
+      msg: 'success',
+      token,
+      user,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ success: false, message: 'Server error' })
+  }
+})
+
+
+// apple signup/login endpoint
+router.post('/apple', async (req, res) => {
+  try {
+    const { email, firstName, lastName } = req.body; 
+    // frontend sends Apple user info
+
+    // Check if user already exists
+    let user = await User.findOne({ email, authProvider: 'apple' });
+
+    if (!user) {
+      // Create new user if not exist
+      user = await User.create({
+        firstName,
+        lastName,
+        email,
+        authProvider: 'apple',
+        isVerified: true, // Apple users are auto-verified
+      })
+    }
+
+    // Generate JWT token using your token util
+    const token = jwt.generateToken({ id: user._id });
+
+    return res.status(200).send({
+      status: 'ok',
+      msg: 'success',
+      token,
+      user,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ success: false, message: 'Server error' });
+  }
+})
+
+
 // Stage One - Collect info & send OTP
 router.post("/signup_stage_one", async (req, res) => {
   const { firstname, lastname, email, phone_no, password, otp_channel } = req.body

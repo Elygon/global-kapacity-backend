@@ -31,7 +31,7 @@ router.post("/signup_stage_one", async (req, res) => {
     }
 
     // Save signup data in payload
-    const payload = { company_name, email, phone_no, password } // for organization
+    const payload = { company_name, company_reg_no, industry, email, phone_no, password } // for organization
 
     // Create a temporary ObjectId for OTP owner
     const tempUserId = new mongoose.Types.ObjectId()

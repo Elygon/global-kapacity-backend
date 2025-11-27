@@ -72,7 +72,7 @@ const sendPasswordReset = async (email, firstname, resetPasswordCode) => {
             <p style="line-height: 1.2;">Hi ${firstname},</p>
             <p style="line-height: 1.2;">We've received a request to reset your password.</p>
             <p style="line-height: 1.5;">If you didn't make the request, just ignore this message. Otherwise, you can reset your password.</p>        
-            <a href=http://localhost:7000/user_auth/reset_password/${resetPasswordCode}>
+            <a href=http://localhost:7000/auth_generalAuth/reset_password/${resetPasswordCode}>
                 <button style="font-weight: 500;font-size: 14px;cursor: pointer; background-color: rgba(238, 119, 36, 1); border: none; border-radius: 4px; padding: 12px 18px 12px 18px; color: white;">
                     Reset your password
                 </button>
@@ -109,7 +109,7 @@ const sendPasswordResetOrg = async (email, company_name, resetPasswordCode) => {
             <p style="line-height: 1.2;">Hi ${company_name},</p>
             <p style="line-height: 1.2;">We've received a request to reset your password.</p>
             <p style="line-height: 1.5;">If you didn't make the request, just ignore this message. Otherwise, you can reset your password.</p>        
-            <a href=http://localhost:7000/organization_auth/reset_password/${resetPasswordCode}>
+            <a href=http://localhost:7000/auth_generalAuth/reset_password/${resetPasswordCode}>
                 <button style="font-weight: 500;font-size: 14px;cursor: pointer; background-color: rgba(238, 119, 36, 1); border: none; border-radius: 4px; padding: 12px 18px 12px 18px; color: white;">
                     Reset your password
                 </button>

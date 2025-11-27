@@ -1,11 +1,11 @@
 const mongoose = require('mongoose')
 
 const otpSchema = new mongoose.Schema({
-    owner_id: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+    owner_id: { type: mongoose.Schema.Types.ObjectId, required: true },
     owner_type: { type: String, enum: ['user', 'organization'], required: true },
     code: { type: String, required: true },
     purpose: { type: String, enum: ['verify_account', 'reset_password'], required: true },
-    expires_at: { type: Date, required: true, index: true },
+    expires_at: { type: Date, required: true },
     payload: { type: Object, required: false }, // <-- Store signup data temporarily
 }, { timestamps: true, collection: 'one_time_passwords' })
 

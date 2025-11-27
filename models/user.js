@@ -29,7 +29,7 @@ const userSchema = new Schema({
     last_login: Number,
     last_logout: Number, 
     status: {type: String, enum: ["Active", "Suspended", "Deactivated"], default: "Active"},//Status can be 'Active', 'Suspended' or 'Deleted'
-    is_verified: { type: Boolean, default: false },
+    is_verified: { type: Boolean, default: true },
     is_kip: { type: Boolean, default: false },
     is_blocked: { type: Boolean, default: false },
     block_reason: {type: String, default: ''},

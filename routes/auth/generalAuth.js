@@ -11,7 +11,7 @@ const { sendPasswordReset, sendPasswordResetOrg } = require("../../utils/nodemai
 const Statistics = require('../../models/statistics')
 
 const Otp = require('../../models/otp')
-const { createOtp, validateOtp, deleteOtp } = require('../../services/otp_service')
+const { validateOtp, deleteOtp } = require('../../services/otp_service')
 
 /**
  * Stage 2 - Verify OTP & create account (generalized)

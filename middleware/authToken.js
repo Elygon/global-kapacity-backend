@@ -1,7 +1,7 @@
 // Import the JSON Web Token (JWT) library for verifying tokens
 const jwt = require('jsonwebtoken')
 
-// Import your database models (Guest and Staff)
+// Import your database models (User, Organization and Admin)
 const User = require('../models/user')
 const Admin = require('../models/admin')
 const Organization = require('../models/organization')
@@ -55,7 +55,7 @@ const auth = async (req, res, next) => {
 
 
       // Attach user info and role ("user") to the request
-      req.user = { ...user, from: 'user' }
+      req.user = { ...user, type: 'user', from: 'user' }
 
       // Continue to the next middleware or route
       next()
@@ -77,7 +77,7 @@ const auth = async (req, res, next) => {
         return res.status(403).json({ status: 'error', msg: 'Organization account blocked or deleted' })
 
       // Attach organization info and role ("organization") to the request
-      req.user = { ...organization, from: 'organization' }
+      req.user = { ...organization, type: 'organization', from: 'organization' }
 
       // Continue to the next middleware or route
       next()
@@ -99,7 +99,7 @@ const auth = async (req, res, next) => {
         return res.status(403).json({ status: 'error', msg: 'Admin account blocked or deleted' })
 
       // Attach admin info and role ("admin") to the request
-      req.user = { ...admin, from: 'admin' }
+      req.user = { ...admin, type: 'admin', from: 'admin' }
 
       // Continue to the next middleware or route
       next()

@@ -81,7 +81,7 @@ const sendPasswordReset = async (email, firstname, resetPasswordCode) => {
             <br/>
             <br/>
             <br/>
-            <p style="line-height: 1.5">If you did not make this request, please ignore this email. <br /><br />Best regards, <br />Team Cart.</p>
+            <p style="line-height: 1.5">If you did not make this request, please ignore this email. <br /><br />Best regards, <br />Kapacity Management Team.</p>
         </div>`
     })
 
@@ -118,7 +118,7 @@ const sendPasswordResetOrg = async (email, company_name, resetPasswordCode) => {
             <br/>
             <br/>
             <br/>
-            <p style="line-height: 1.5">If you did not make this request, please ignore this email. <br /><br />Best regards, <br />Team Cart.</p>
+            <p style="line-height: 1.5">If you did not make this request, please ignore this email. <br /><br />Best regards, <br />Kapacity Management Team.</p>
         </div>`
     })
 
@@ -153,7 +153,7 @@ const sendPasswordResetAdmin = async (email, firstname, resetPasswordCode) => {
                     <p>Best regards,<br>Team Cart</p>
                 </div>
             `,
-            text: `Hi ${firstname},\n\nWe've received a request to reset your password.\n\nIf you didn't make the request, ignore this email. Otherwise, visit this link:\nhttp://localhost:1000/staff_auth/reset_password/${resetPasswordCode}\n\nBest regards,\nTeam Cart`
+            text: `Hi ${firstname},\n\nWe've received a request to reset your password.\n\nIf you didn't make the request, ignore this email. Otherwise, visit this link:\nhttp://localhost:7000/admin_auth/reset_password/${resetPasswordCode}\n\nBest regards,\nKapacity Management Team`
         }
 
         const info = await transport.sendMail(mailOptions)

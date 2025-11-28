@@ -54,7 +54,10 @@ router.post('/verify_account', async (req, res) => {
 
     // Create account
     const Model = ownerType === 'user' ? User : Organization
-    const account = await Model.create(payload)
+    let account = await Model.create(payload)
+
+    // Mark account as online immediately
+    account = await Model.findByIdAndUpdate(account._id, { is_online: true }, { new: true, lean: true })
 
     // Generate JWT
     const token = jwt.sign({ _id: account._id, email: account.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -79,6 +82,10 @@ router.post('/verify_account', async (req, res) => {
 router.post('/sign_in', async(req, res) => {
     const {email, phone_no, password, owner_type} = req.body
 
+    /*console.log("BODY RECEIVED:", req.body)
+    console.log("email:", email)
+    console.log("phone_no:", phone_no)*/
+
     if (!owner_type || !['user', 'organization'].includes(owner_type))
       return res.status(400).send({ status: 'error', msg: 'Invalid owner type'})
     
@@ -100,7 +107,7 @@ router.post('/sign_in', async(req, res) => {
 
         let account = await model.findOne({ $or: conditions }).lean()
         if (!account) {
-          return res.status(400).send({ status: 'error', msg: 'No account found with the provided email or phone'})
+          return res.status(400).send({ status: 'error', msg: 'No account found with the provided email or phone number'})
         }
 
         // Require verification
@@ -248,6 +255,7 @@ router.post('/forgot_password', async (req, res) => {
        
         // Fetch user first
         let account = await User.findOne({ email }).lean()
+        let type = 'user'  // assume user by default
 
         // If not user, try organization
         if (!account) {

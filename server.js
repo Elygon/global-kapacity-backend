@@ -60,6 +60,10 @@ app.use('/user_payment', require('./routes/user/payment'))
 // search route for both user (individual) and organization
 app.use('/search', require('./routes/search/search'))
 
+// ask anything route for both user (individual) and organization
+app.use('/ai', require('./routes/ai/ai'))
+
+
 //organization routes
 app.use('/organization_profile', require('./routes/organization/profile'))
 app.use('/organization_news', require('./routes/organization/news'))

@@ -5,11 +5,12 @@ const User = require("../../models/user")
 const Organization = require("../../models/organization")
 const UserProfile = require("../../models/user_profile")
 const OrganizationProfile = require("../../models/organize_profile")
+const authToken = require('../../middleware/authToken')
 
 
 
 // Unified Search: Users + Organizations
-router.post("/search", async (req, res) => {
+router.post("/search", authToken, async (req, res) => {
     try {
         const {
             keyword,

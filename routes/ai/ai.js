@@ -2,6 +2,7 @@ const express = require("express")
 const router = express.Router()
 
 const OpenAI = require("openai")
+const authToken = require('../../middleware/authToken')
 
 // Load your API key
 const client = new OpenAI({
@@ -13,7 +14,7 @@ const client = new OpenAI({
  *  POST /api/ai/ask
  *  Body: { question: "..." }
  */
-router.post("/ask", async (req, res) => {
+router.post("/ask", authToken, async (req, res) => {
     try {
         const { question } = req.body
 

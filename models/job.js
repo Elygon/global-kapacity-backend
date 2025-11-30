@@ -46,6 +46,7 @@ const jobSchema = new mongoose.Schema({
     email: String,
 
     // After Job Posting has been submitting
+    is_published: { type: Boolean, default: false },
     is_visible: { type: Boolean, default: false }, // becomes true after admin aproval
     is_rejected: { type: Boolean, default: false }, // optional
     rejection_reason: { type: String, default: null },
@@ -62,7 +63,7 @@ const jobSchema = new mongoose.Schema({
         'Mid-Level(3-5 years)', 'Senior (5-10 years)', 'No Experience Required']
     },
     location: String,
-    isClosed: { type: Boolean, default: false }
+    is_closed: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'jobs' })
 
 const model = mongoose.model('Job', jobSchema)

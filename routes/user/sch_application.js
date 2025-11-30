@@ -4,7 +4,7 @@ const router = express.Router()
 const cloudinary = require('../../utils/cloudinary')
 const uploader = require('../../utils/multer')
 
-const Scholarship = require("../../models/scholarships")
+const Scholarship = require("../../models/scholarship")
 const ScholarApplication = require("../../models/sch_application")
 const authToken = require("../../middleware/authToken") // your auth middleware
 

@@ -72,7 +72,7 @@ router.post("/step_two", authToken, isPremiumOrganization, async (req, res) => {
 
 
 
-// =========================================
+/*/ =========================================
 // STEP 3: JOB PREVIEW
 // =========================================
 router.post('/preview', authToken, isPremiumOrganization, async (req, res) => {
@@ -92,7 +92,7 @@ router.post('/preview', authToken, isPremiumOrganization, async (req, res) => {
 
         return res.status(500).send({ status: 'error', msg: 'An error occurred', error: e.message })
     }
-})
+})*/
 
 
 
@@ -108,7 +108,7 @@ router.post('/publish', authToken, isPremiumOrganization, async (req, res) => {
         )
 
         if (!job)
-            return res.status(404).send({ status: 'ok', msg: 'Job not found' })
+            return res.status(404).send({ status: 'error', msg: 'Job not found' })
 
         return res.status(200).send({ status: 'ok', msg: 'success', job })
     } catch (e) {
@@ -209,14 +209,12 @@ router.post('/close', authToken, isPremiumOrganization, async (req, res) => {
         return res.status(400).send({ status: 'error', msg: 'Job ID is required' })
 
     try {
-        const job = await Job.findOne({ _id: jobId, posted_by: req.user._id })
+        const job = await Job.findOneAndUpdate({ _id: jobId, posted_by: req.user._id }, { $set: { is_closed: true }},
+            { new: true }
+        )
 
         if (!job)
             return res.status(404).send({ status: 'error', msg: 'Job not found' })
-
-        job.status = 'closed'
-        job.timestamp = Date.now()
-        await job.save()
 
         return res.status(200).send({ status: 'ok', msg: 'success', job })
 

@@ -22,7 +22,9 @@ const PaymentCategorySchema = new mongoose.Schema({
 
 const trainingSchema = new mongoose.Schema({
     posted_by: {type: mongoose.Schema.Types.ObjectId, refPath: 'Posted_by_model', required: true},
-    posted_by_model: { type: String, enum: ['User', 'Organization']},
+    posted_by_model: { type: String, enum: ['User', 'Organization'] },
+    selected_kip: {type: mongoose.Schema.Types.ObjectId, refPath: 'selected_kip_model', default: null},
+    selected_kip_model: { type: String, enum: ['User', 'Organization'] },
 
     // Step 1 (Training Details)
     title: String,
@@ -56,26 +58,28 @@ const trainingSchema = new mongoose.Schema({
     co_organizers: [CoOrganizerSchema],
 
     // Step 3 (Training Registration)
-    is_paid: Boolean,
+    reg: { is_paid: Boolean, has_tickets: Boolean },
+    tickets: [{ name: String, training_fee: Number, currency: String, _id: false }],
 
-    // In-Person only - payment categories available
-    has_payment_categories: { type: Boolean, default: false },
-    payment_categories: [PaymentCategorySchema], // For in-person
+
+    // For paid without tickets 0R free trainings (virtual/hybrid)
     training_fee: Number,
     training_link: String,
-    reg_method: { type: String, enum: [ 'kapacity', 'external link' ], default: 'kapacity' },
-    external_reg_link: String,
-    msg: { type: String, maxlength: 150 },
+    preferred_reg_method: { type: String, enum: ['kapacity', 'external'] },
+    external_reg_url: String,
+    msg_after_reg: { type: String, maxlength: 150 },
 
-    event_type: {
+    // After Training Posting has been submitting
+    status: {
         type: String,
-        enum: [
-            'Free Virtual Event', 'Paid Event In-Person', 'Paid Event Hybrid'
-        ]
+        enum: [ 'draft', 'pending admin approval', 'pending kip approval', 'published', 'rejected by admin',
+            'rejected by kip', 'awaiting new kip' ],
+        default: 'draft'
     },
-    images: [
-        { img_id: String, img_url: String }
-    ]
+    is_visible: { type: Boolean, default: false }, // becomes true after admin aproval
+    is_rejected: { type: Boolean, default: false }, // optional
+    rejection_reason: { type: String, default: null },
+    kip_response: { type: String, enum: ['none', 'pending', 'accepted', 'rejected'], default: 'none' }
 }, { timestamps: true, collection: 'trainings' })
 
 const model = mongoose.model('Training', trainingSchema)

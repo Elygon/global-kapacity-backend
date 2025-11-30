@@ -1,7 +1,7 @@
 const express = require("express")
 const router = express.Router()
 
-const Scholarship = require("../../models/scholarships")
+const Scholarship = require("../../models/scholarship")
 const Organization = require("../../models/organization")
 const User = require("../../models/user")
 const authToken = require("../../middleware/authToken")

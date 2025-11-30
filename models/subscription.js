@@ -1,24 +1,20 @@
 const mongoose = require('mongoose')
 
 const subscribeSchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    organization_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', default: null },
+    account_type: { type: String, enum: ['user', 'organization'], required: true },
 
-    // freemium or premium
-    sub_type: {
-        type: String, enum: ['freemium','premium'], default: 'freemium'
-    },
-    // user or organization
-    account_type: {
-        type: String,
-        enum: ['user', 'organization']
-    },
+    // plan info
+    plan: { type: String, enum: ['monthly', 'quarterly', 'yearly'], required: true }, 
 
-    // pricing object for different billing cycles
-    sub_cycle: { type: String, enum: ['monthly', 'quarterly', 'yearly', null], default: null
-    },
-    sub_expires: { type: Date, default: null},
-    is_premiumActive: { type: Boolean, default: false },
+    // status
+    is_active: { type: Boolean, default: true },
+
+    // Date tracking
+    start_date: Date,
+    end_date: Date,
+    
     amount: Number,
     transaction_ref: String
 }, { timestamps: true, collection: 'subscriptions' })

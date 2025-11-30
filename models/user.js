@@ -16,12 +16,9 @@ const userSchema = new Schema({
     },
 
     // for subscription plans
-    subscription: {
-        plan: { type: String, enum: ['freemium', 'premium'], default: 'freemium' },
-        start_date: Date,
-        end_date: Date,
-        isActive: { type: Boolean, default: true }
-    },
+    is_premium_user: { type: Boolean, default: false },
+    sub_plan: { type: String, enum: ['none', 'monthly', 'quarterly', 'yearly'], default: 'none' },
+    expiry_date: { type: Date, default: null },
     
     // for user's account status
     is_online:{type: Boolean, default: false },

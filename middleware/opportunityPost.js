@@ -1,41 +1,53 @@
-const User = require("../models/user")
+const User = require('../models/user')
 const Organization = require('../models/organization')
 
 
-// Middleware 1: Prevent freemium users from posting opportunities
+
+// =========================
+// INDIVIDUAL PREMIUM CHECK
+// =========================
 const isPremiumUser = async (req, res, next) => {
     if (!req.user?._id) {
-        return res.status(401).send({ status: "error", msg: "Unauthorized" });
+        return res.status(401).send({ status: "error", msg: "Unauthorized" })
     }
 
     const user = await User.findById(req.user._id)
 
-    if (!user || user.subscription?.status !== "active") {
-        return res.status(403).send({ status: "error", msg: "Only premium users can post opportunities" })
+    if (!user) {
+        return res.status(404).send({ status: "error", msg: "User not found" })
     }
 
-    next()
+    const isExpired = user.expiry_date && new Date(user.expiry_date) < new Date()
+
+    if (!user.is_premium_user || isExpired) {
+        return res.status(403).send({ status: "error", msg: "Only premium users can post opportunities except jobs" })
+    }
+
+    next() 
 }
 
 
-// Middleware 2: Only Organization premium users can post job opporrtunites
+// =========================
+// ORGANIZATION PREMIUM CHECK
+// =========================
 const isPremiumOrganization = async (req, res, next) => {
     if (!req.user?._id) {
-        return res.status(401).send({ status: "error", msg: "Unauthorized" });
+        return res.status(401).send({ status: "error", msg: "Unauthorized" })
     }
 
-    const user = await User.findById(req.user._id)
+    const org = await Organization.findById(req.user._id)
 
-    // Must be premium + organization
-    const isPremium = user.subscription?.status === "active"
-    const isOrg = user.account_type === "organization"
+    if (!org) {
+        return res.status(404).send({ status: "error", msg: "Organization not found" })
+    }
 
-    if (!isPremium || !isOrg) {
+    const isExpired = org.expiry_date && new Date(org.expiry_date) < new Date()
+
+    if (!org.is_premium_org || isExpired) {
         return res.status(403).send({ status: "error", msg: "Only premium organizations can post job opportunities" })
     }
 
     next()
 }
-
 
 module.exports = { isPremiumUser, isPremiumOrganization }

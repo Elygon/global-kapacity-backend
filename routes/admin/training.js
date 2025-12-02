@@ -5,7 +5,6 @@ const Training = require('../../models/training')
 const User = require('../../models/user')
 const Organization = require('../../models/organization')
 const authToken = require('../../middleware/authToken')
-
 const { trainingApprovalMail, trainingRejectionMail, trainingHiddenMail,
     trainingToKipMail, trainingNotifyKipMail  } = require('../../utils/nodemailer')
 
@@ -49,7 +48,7 @@ router.post("/specific", authToken, async (req, res) => {
         const { trainingId } = req.body
 
         if (!trainingId) {
-            return res.status(400).send({ status: "error", msg: "TrainingId is required" })
+            return res.status(400).send({ status: "error", msg: "Training ID is required" })
         }
 
         const training = await Training.findById(trainingId)
@@ -143,10 +142,10 @@ router.post("/reject", authToken, async (req, res) => {
             reason
         )
 
-        return res.status(200).send({ status: "ok", training });
+        return res.status(200).send({ status: "ok", msg: 'success', training })
 
     } catch (error) {
-        return res.status(500).send({ status: "error", error: error.message });
+        return res.status(500).send({ status: "error", msg: 'Server error', error: error.message })
     }
 })
 
@@ -246,10 +245,10 @@ router.post("/delete", authToken, async (req, res) => {
 
         const deleted = await Training.findByIdAndDelete(trainingId)
 
-        return res.status(200).send({ status: "ok", deleted })
+        return res.status(200).send({ status: "ok", msg: 'success', deleted })
 
     } catch (error) {
-        return res.status(500).send({ status: "error", error: error.message })
+        return res.status(500).send({ status: "error", msg: 'Server error', error: error.message })
     }
 })
 

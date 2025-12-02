@@ -4,6 +4,7 @@ const router = express.Router()
 const authToken = require('../../middleware/authToken')
 const Scholarship = require('../../models/scholarship')
 const isKIP = require('../../middleware/isKIP')
+const { kipAcceptsScholarshipMail, kipRejectsScholarshipMail } = require('../../utils/nodemailer')
 
 
 // =======================================================
@@ -30,16 +31,21 @@ router.post('/verify', authToken, isKIP, async (req, res) => {
 
     try {
         const scholarship = await Scholarship.findOne({ _id: scholarshipId, kip_id: req.kip._id })
+        .populate('posted_by', 'email firstname').populate('selected_kip', 'email organization_name')
         if (!scholarship)
-            return res.status(404).json({ status: "error", msg: "Scholarship not found" })
+            return res.status(404).send({ status: "error", msg: "Scholarship not found" })
 
         scholarship.kip_status = 'verified'
 
         await scholarship.save()
 
+        // send emails
+        await kipAcceptsScholarshipMail(scholarship.posted_by.email, scholarship.posted_by.firstname, scholarship.title)
+        /*await trainingNotifyKipMail(training.selected_kip.email, training.selected_kip.organization_name, training.title)*/
+
         return res.send({ status: 'ok', msg: 'success', scholarship })
     } catch (err) {
-        res.status(500).json({ status: "error", msg: "Server error", error: err.message })
+        res.status(500).send({ status: "error", msg: "Server error", error: err.message })
     }
 })
 
@@ -55,16 +61,22 @@ router.post('/reject', authToken, isKIP, async (req, res) => {
     }
     try {
         const scholarship = await Scholarship.findOne({ _id: scholarshipId, kip_id: req.kip._id })
+        .populate('posted_by', 'email firstname').populate('selected_kip', 'email organization_name')
 
         if (!scholarship)
-            return res.status(404).send({ status: "error", msg: "Training not found" })
+            return res.status(404).send({ status: "error", msg: "Scholarship not found" })
 
         scholarship.kip_status = "rejected"
         scholarship.kip_rejection_reason = reason
 
         await scholarship.save()
 
-        return res.status(200).send({ status: 'ok', msg: "success", scholarship })
+        // send emails
+        await kipRejectsScholarshipMail(scholarship.posted_by.email, scholarship.posted_by.firstname, 
+            scholarship.title, scholarship.kip_rejection_reason)
+        /*await trainingNotifyKipMail(training.selected_kip.email, training.selected_kip.organization_name, training.title)*/
+
+        return res.status(200).send({ status: 'ok', msg: "success", training: scholarship })
     } catch (err) {
         res.status(500).send({ status: "error", msg: "Server error", error: err.message })
     }
@@ -75,25 +87,25 @@ router.post('/reject', authToken, isKIP, async (req, res) => {
 // MARK TRAINING AS COMPLETED (Managed Successfully)
 // =======================================================
 router.post('completed', authToken, isKIP, async (req, res) => {
-    const { trainingId } = req.body
-    if (!trainingId) {
-        return res.status(400).send({ status: 'error', msg: 'Training ID is required'})
+    const { scholarshipId } = req.body
+    if (!scholarshipId) {
+        return res.status(400).send({ status: 'error', msg: 'Scholarship ID is required'})
     }
 
     try {
-        const training = await Scholarship.findOne({ _id: trainingId, kip_id: req.kip._id })
+        const scholarship = await Scholarship.findOne({ _id: scholarshipId, kip_id: req.kip._id })
 
-        if (!training)
-            return res.status(404).send({ status: "error", msg: "Training not found" })
+        if (!scholarship)
+            return res.status(404).send({ status: "error", msg: "Scholarship not found" })
 
-        if (training.kip_status !== "verified")
-            return res.status(400).send({ status: "error", msg: "Training must be verified before completing it."
+        if (scholarship.kip_status !== "verified")
+            return res.status(400).send({ status: "error", msg: "Scholarship must be verified before completing it."
         })
 
-        training.kip_status = 'completed'
-        await training.save()
+        scholarship.kip_status = 'completed'
+        await scholarship.save()
 
-        return res.status(200).send({ status: 'ok', msg: 'success', training })
+        return res.status(200).send({ status: 'ok', msg: 'success', scholarship })
     } catch (err) {
         return res.status(500).send({ status: "error", msg: "Server error", error: err.message })
     }

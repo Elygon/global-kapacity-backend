@@ -549,54 +549,203 @@ const trainingNotifyKipMail = async (email, organization_name, title) => {
 }
 
 
-// Approved Training sent to selected Impact Partner for verification
+// ===============================
+// TRAINING — KIP ACCEPTED
+// ===============================
 const kipAcceptsTrainingMail = async (email, firstname, title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Training Has Been Sent to the Selected Impact Partner`,
+            subject: `Your Training Has Been Approved by the Impact Partner ✔️`,
             html: `
-                <div style="font-family: Arial; padding: 20px;">
-                    <h2>Training Forwarded to Impact Partner ✔️</h2>
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+
+                    <h2>Training Accepted ✔️</h2>
+
                     <p>Dear ${firstname},</p>
 
-                    <p>Your training titled <b>${title}</b> has been approved 
-                    by the admin and forwarded to your selected Impact Partner for review.</p>
+                    <p>Your training titled <b>${title}</b> has been reviewed and 
+                    accepted by the selected Impact Partner.</p>
 
-                    <p>The Impact Partner will either accept to manage this training 
-                    or decline it. You will be notified once we receive their response.</p>
+                    <p>The training will now proceed to the next stage of preparation and coordination.</p>
 
                     <br/>
-                    <p>Warm regards,<br/>Kapacity Admin Team</p>
+                    <p>We will keep you informed all through the process.</p>
+                    <br/>
+
+                    <p>Best regards,<br/>Kapacity Training Review Team</p>
                 </div>
             `
         })
 
-        console.log("Training To Selected Impact Partner Email sent:", info.response)
-        return { status: "ok", msg: "Email sent" }
-    } catch (err) {
-        console.error("Error sending user training->KIP email:", err)
+        console.log("KIP Accepts Training Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending KIP Accepts Training Email:", error)
     }
 }
 
 
-// Approved Training sent to selected Impact Partner for verification
-const kipRejectsTrainingMail = async (email, firstname, title) => {
+
+
+// ===============================
+// TRAINING — KIP REJECTED
+// ===============================
+const kipRejectsTrainingMail = async (email, firstname, title, kip_rejection_reason) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Training Has Been Sent to the Selected Impact Partner`,
+            subject: `Your Selected Impact Partner Declined the Training ❌`,
             html: `
-                <div style="font-family: Arial; padding: 20px;">
-                    <h2>Training Forwarded to Impact Partner ✔️</h2>
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+
+                    <h2>Training Declined ❌</h2>
+
                     <p>Dear ${firstname},</p>
 
-                    <p>Your training titled <b>${title}</b> has been approved 
+                    <p>The Impact Partner assigned to your training titled 
+                    <b>${title}</b> has declined to manage it.</p>
+
+                    <p><b>Reason:</b> ${kip_rejection_reason}</p>
+
+                    <p>Please log in to your dashboard to select another Impact Partner 
+                    so the training can proceed.</p>
+
+                    <br/>
+                    <p>If you need assistance, do not hesitate to reach out to support.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>Kapacity Training Review Team</p>
+                </div>
+            `
+        })
+
+        console.log("KIP Rejects Training Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending KIP Rejects Training Email:", error)
+    }
+}
+
+
+// Scholarship Listing Approved
+const scholarshipApprovalMail = async (email, posted_by, title) => {
+    const name = formatRecipientName(posted_by);
+
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Scholarship Has Been Approved ✔️`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Scholarship Approved ✔️</h2>
+                    <p>Dear ${name},</p>
+
+                    <p>Your scholarship titled <b>${title}</b> has been reviewed and 
+                    <b>approved</b> by our platform administrators.</p>
+
+                    <p>The scholarship is now live and visible to learners on the platform.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
+                </div>
+            `
+        })
+
+        console.log("Scholarship Approval Email Sent:", info.response)
+
+    } catch (error) {
+        console.error("Error sending Scholarship Approval Email:", error)
+    }
+}
+
+
+//Scholarship Listing Rejected
+const scholarshipRejectionMail = async (email, posted_by, title, reason) => {
+    const name = formatRecipientName(posted_by)
+
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Scholarship Could Not Be Approved`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Scholarship Rejected ❌</h2>
+                    <p>Dear ${name},</p>
+
+                    <p>Your scholarship titled <b>${title}</b> has been reviewed, 
+                    but cannot be approved at this time.</p>
+
+                    ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
+
+                    <p>You may update the scholarship details and submit it again for review.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>Global Kapacity Review Team</p>
+                </div>
+            `
+        })
+
+        console.log("Scholarship Rejection Email Sent:", info.response)
+
+    } catch (error) {
+        console.error("Error sending Scholarship Rejection Email:", error)
+    }
+}
+
+
+// Scholarship Listing Hidden (taken down after complaints or suspicious observations)
+const scholarshipHiddenMail = async (email, posted_by, title) => {
+    const name = formatRecipientName(posted_by)
+
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Scholarship Has Been Temporarily Hidden`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Scholarship Hidden ⚠️</h2>
+                    <p>Dear ${name},</p>
+
+                    <p>Your scholarship titled <b>${title}</b> has been hidden from public view.</p>
+
+                    <p>This action was taken because further review is required.</p>
+
+                    <p>You may update the scholarship if needed and request another review.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>Global Kapacity Safety Team</p>
+                </div>
+            `
+        })
+
+        console.log("Scholarship Hidden Email Sent:", info.response)
+
+    } catch (error) {
+        console.error("Error sending Scholarship Hidden Email:", error)
+    }
+}
+
+
+// Approved Scholarship sent to selected Impact Partner for verification
+const scholarshipToKipMail = async (email, firstname, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Scholarship Has Been Sent to the Selected Impact Partner`,
+            html: `
+                <div style="font-family: Arial; padding: 20px;">
+                    <h2>Scholarship Forwarded to Impact Partner ✔️</h2>
+                    <p>Dear ${firstname},</p>
+
+                    <p>Your scholarship titled <b>${title}</b> has been approved 
                     by the admin and forwarded to your selected Impact Partner for review.</p>
 
-                    <p>The Impact Partner will either accept to manage this training 
+                    <p>The Impact Partner will either accept to manage this scholarship 
                     or decline it. You will be notified once we receive their response.</p>
 
                     <br/>
@@ -605,12 +754,123 @@ const kipRejectsTrainingMail = async (email, firstname, title) => {
             `
         })
 
-        console.log("Training To Selected Impact Partner Email sent:", info.response)
+        console.log("Scholarship To Selected Impact Partner Email sent:", info.response)
         return { status: "ok", msg: "Email sent" }
     } catch (err) {
-        console.error("Error sending user training->KIP email:", err)
+        console.error("Error sending user scholarship->KIP email:", err)
     }
 }
+
+
+// Scholarship Listing sent for selected partner response
+const scholarshipNotifyKipMail = async (email, organization_name, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `You Have Been Selected as Impact Partner`,
+            html: `
+                <div style="font-family: Arial; padding: 20px;">
+                    <h2>Impact Partner Assignment</h2>
+                    <p>Dear ${organization_name},</p>
+
+                    <p>You have been selected as the Impact Partner for the scholarship titled 
+                    <b>${title}</b>.</p>
+
+                    <p>Please review the scholarship details and let us know if you 
+                    <b>accept</b> or <b>decline</b> managing this scholarship.</p>
+
+                    <p>Your decision will be forwarded to the scholarship owner and the admin.</p>
+
+                    <br/>
+                    <p>Warm regards,<br/>Kapacity Team</p>
+                </div>
+            `
+        })
+    } catch (err) {
+        console.error("Error sending KIP notification email:", err)
+    }
+}
+
+
+// ===============================
+// SCHOLARSHIP — KIP ACCEPTED
+// ===============================
+const kipAcceptsScholarshipMail = async (email, firstname, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Scholarship Listing Has Been Approved by the Impact Partner ✔️`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+
+                    <h2>Scholarship Accepted ✔️</h2>
+
+                    <p>Dear ${firstname},</p>
+
+                    <p>Your scholarship titled <b>${title}</b> has been reviewed and 
+                    accepted by the selected Impact Partner.</p>
+
+                    <p>The scholarship will now proceed to the next stage of preparation and coordination.</p>
+
+                    <br/>
+                    <p>We will keep you informed all through the process.</p>
+                    <br/>
+
+                    <p>Best regards,<br/>Kapacity Scholarship Review Team</p>
+                </div>
+            `
+        })
+
+        console.log("KIP Accepts Scholarship Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending KIP Accepts Scholarship Email:", error)
+    }
+}
+
+
+
+
+// ===============================
+// SCHOLARSHIP — KIP REJECTED
+// ===============================
+const kipRejectsScholarshipMail = async (email, firstname, title, kip_rejection_reason) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Selected Impact Partner Declined the Scholarship ❌`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+
+                    <h2>Scholarship Declined ❌</h2>
+
+                    <p>Dear ${firstname},</p>
+
+                    <p>The Impact Partner assigned to your Scholarship titled 
+                    <b>${title}</b> has declined to manage it.</p>
+
+                    <p><b>Reason:</b> ${kip_rejection_reason}</p>
+
+                    <p>Please log in to your dashboard to select another Impact Partner 
+                    so the scholarship can proceed.</p>
+
+                    <br/>
+                    <p>If you need assistance, do not hesitate to reach out to support.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>Kapacity Scholarship Review Team</p>
+                </div>
+            `
+        })
+
+        console.log("KIP Rejects Scholarship Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending KIP Rejects Scholarship Email:", error)
+    }
+}
+
 
 
 // User Payment Confirmation
@@ -732,6 +992,13 @@ module.exports = {
     trainingNotifyKipMail,
     kipAcceptsTrainingMail, 
     kipRejectsTrainingMail,
+    scholarshipApprovalMail,
+    scholarshipRejectionMail,
+    scholarshipHiddenMail,
+    scholarshipToKipMail,
+    scholarshipNotifyKipMail,
+    kipAcceptsScholarshipMail,
+    kipRejectsScholarshipMail,
     sendPaymentSuccessMail,
     sendPaymentSuccessMailOrg
 }

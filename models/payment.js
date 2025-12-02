@@ -21,10 +21,10 @@ const paymentSchema = new mongoose.Schema({
         enum: ["Bank Transfer", "Cash Payment", "Debit Card", "Online Payment"],
         required: true
     },
-    description: String,
+    /*description: String,*/
     subscription: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription' },
-    /*order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
-    event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
+    registration: { type: mongoose.Schema.Types.ObjectId, ref: 'Registration' },
+    /*event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
     service: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },*/
     gateway: { 
         type: String, 

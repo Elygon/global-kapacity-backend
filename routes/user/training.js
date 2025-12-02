@@ -3,7 +3,7 @@ const router = express.Router()
 
 const authToken = require('../../middleware/authToken')
 const Training = require('../../models/training')
-const SavedTraining = require("../../models/saved_traaining")
+const SavedTraining = require("../../models/saved_training")
 const { isPremiumUser } = require("../../middleware/opportunityPost")
 const cloudinary = require('../../utils/cloudinary')
 const uploader = require('../../utils/multer')
@@ -134,12 +134,9 @@ router.post("/unsave", authToken, async (req, res) => {
         }
 
         // Remove the training from the user's saved trainings array
-        const updatedUser = await User.findByIdAndUpdate( userId, 
-            { $pull: { savedTrainings: trainingId }}, // assumes saved trainings is an array of ObjectIds
-            { new: true }
-        )
+        await SavedTraining.findByIdAndDelete({ userId, trainingId })
 
-        return res.status(200).send({ status: "ok", msg: "success", savedTrainings: updatedUser.savedTrainings })
+        return res.status(200).send({ status: "ok", msg: "success" })
     } catch (error) {
         res.status(500).send({ status: "error", msg: "Server error", error: error.message })
     }
@@ -182,8 +179,7 @@ router.post("/select_kip", authToken, isPremiumUser, async (req, res) => {
             posted_by_model: 'User',
             selected_kip,
             selected_kip_model: 'User', // or 'Organization' depending on KIP type
-            kip_response: 'pending',
-            status: 'draft', // pre-step draft
+            kip_status: 'pending',
             step: 0 // indicates before Step 1
         })
 
@@ -264,8 +260,7 @@ router.post("/step_one", authToken, isPremiumUser, uploader.array('images', 5), 
             reg_deadline,
             is_certified,
             banner_img: images,
-            step: 1,
-            status: 'draft'
+            step: 1
         })
 
         await newTraining.save()
@@ -388,15 +383,18 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
     const { trainingId } = req.body
     
     try {
-        const training = await Training.findOneAndUpdate({ _id: trainingId, posted_by: req.user._id,
-            posted_by_model: 'User'  }, { $set: { is_published: true , updatedAt: Date.now() }}, { new: true }
-        )
+        const training = await Training.findOne({ _id: trainingId, posted_by: req.user._id, posted_by_model: 'User'  })
 
         if (!training)
             return res.status(404).send({ status: 'error', msg: 'Training not found' })
 
         if (training.step !== 3)
             return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing'})
+
+        training.admin_status = 'pending admin review'
+        training.updatedAt = Date.now()
+
+        await training.save()
 
         return res.status(200).send({ status: 'ok', msg: 'success', training })
     } catch (e) {
@@ -413,7 +411,7 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
 router.post('/all', authToken, isPremiumUser, async (req, res) => {
     try {
         const trainings = await Training.find({ posted_by: req.user._id, posted_by_model: 'User' })
-        .sort({ date_posted: -1 })
+        .sort({ createdAt: -1 })
 
         if (!trainings.length)
             return res.status(200).send({ status: 'ok', msg: 'No training postings found' })
@@ -472,7 +470,7 @@ router.post('/update', authToken, isPremiumUser, async (req, res) => {
         if (!training)
             return res.status(404).send({ status: 'error', msg: 'Training not found' })
 
-        updateData.timestamp = Date.now()
+        updateData.updatedAt = Date.now()
 
         const updatedTraining = await Training.findByIdAndUpdate(trainingId, updateData, { new: true })
 

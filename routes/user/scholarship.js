@@ -33,7 +33,6 @@ router.post("/search", authToken, async (req, res) => {
             field_of_study,
             scholarship_type,
             region,
-            gender_based,
             date_posted,     // all, last_24_hours, last_3_days, last_7_days, last_14_days, last_30_days, over_1_month
             mode_of_study
         } = req.body
@@ -52,7 +51,6 @@ router.post("/search", authToken, async (req, res) => {
         if (field_of_study) filter.field_of_study = field_of_study
         if (scholarship_type) filter.scholarship_type = scholarship_type
         if (region) filter.region = region
-        if (gender_based) filter.gender_based = gender_based
         if (mode_of_study) filter.mode_of_study = mode_of_study
 
         // Date posted filter
@@ -60,7 +58,7 @@ router.post("/search", authToken, async (req, res) => {
             const dateLimit = getDateFromPeriod(date_posted)
             if (dateLimit === "over_1_month") {
                 // scholarships older than 30 days
-                const thirtyDaysAgo = new Date();
+                const thirtyDaysAgo = new Date()
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
                 filter.createdAt = { $lt: thirtyDaysAgo }
             } else if (dateLimit) {
@@ -132,12 +130,9 @@ router.post("/unsave", authToken, async (req, res) => {
         }
 
         // Remove the scholarship from the user's saved scholarships array
-        const updatedUser = await User.findByIdAndUpdate( userId, 
-            { $pull: { savedScholarships: scholarshipId }}, // assumes saved scholarships is an array of ObjectIds
-            { new: true }
-        )
+        await SavedScholarship.findByIdAndDelete({ userId, scholarshipId })
 
-        return res.status(200).send({ status: "ok", msg: "success", savedScholarships: updatedUser.savedScholarships })
+        return res.status(200).send({ status: "ok", msg: "success" })
     } catch (error) {
         res.status(500).send({ status: "error", msg: "Server error", error: error.message })
     }
@@ -180,8 +175,7 @@ router.post("/select_kip", authToken, isPremiumUser, async (req, res) => {
             posted_by_model: 'User',
             selected_kip,
             selected_kip_model: 'User', // or 'Organization' depending on KIP type
-            kip_response: 'pending',
-            status: 'draft', // pre-step draft
+            kip_status: 'pending',
             step: 0 // indicates before Step 1
         })
 
@@ -316,7 +310,7 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
     
     try {
         const scholarship = await Scholarship.findOneAndUpdate({ _id: scholarshipId, posted_by: req.user._id,
-            posted_by_model: 'User' }, { $set: { is_published: true , updatedAt: Date.now() }}, { new: true }
+            posted_by_model: 'User' }, { new: true }
         )
 
         if (!scholarship)
@@ -324,6 +318,11 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
 
         if (scholarship.step !== 3)
             return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing'})
+
+        scholarship.admin_status = 'pending admin review'
+        scholarship.updatedAt = Date.now()
+
+        await scholarship.save()
 
         return res.status(200).send({ status: 'ok', msg: 'success', scholarship })
     } catch (e) {
@@ -341,7 +340,7 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
 router.post('/all', authToken, isPremiumUser, async (req, res) => {
     try {
         const scholarships = await Scholarship.find({ posted_by: req.user._id, posted_by_model: 'User' })
-        .sort({ date_posted: -1 })
+        .sort({ createdAt: -1 })
 
         if (!scholarships.length)
             return res.status(200).send({ status: 'ok', msg: 'No scholarship postings found' })

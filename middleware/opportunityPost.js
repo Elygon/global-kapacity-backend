@@ -30,7 +30,7 @@ const isPremiumUser = async (req, res, next) => {
 // =========================
 // ORGANIZATION PREMIUM CHECK
 // =========================
-const isPremiumOrganization = async (req, res, next) => {
+const isPremiumOrg = async (req, res, next) => {
     if (!req.user?._id) {
         return res.status(401).send({ status: "error", msg: "Unauthorized" })
     }
@@ -50,4 +50,4 @@ const isPremiumOrganization = async (req, res, next) => {
     next()
 }
 
-module.exports = { isPremiumUser, isPremiumOrganization }
+module.exports = { isPremiumUser, isPremiumOrg }

@@ -7,7 +7,7 @@ const monetaryValueSchema = new mongoose.Schema({
 }, { _id: false })
 
 const scholarshipSchema = new mongoose.Schema({
-    posted_by: {type: mongoose.Schema.Types.ObjectId, refPath: 'Posted_by_model', required: true},
+    posted_by: {type: mongoose.Schema.Types.ObjectId, refPath: 'posted_by_model', required: true},
     posted_by_model: { type: String, enum: ['User', 'Organization'] },
     selected_kip: {type: mongoose.Schema.Types.ObjectId, refPath: 'selected_kip_model', default: null},
     selected_kip_model: { type: String, enum: ['User', 'Organization'] },
@@ -67,16 +67,15 @@ const scholarshipSchema = new mongoose.Schema({
     application_link: String,
 
     // After Scholarship Posting has been submitting
-    status: {
+    admin_status: {
         type: String,
-        enum: [ 'draft', 'pending admin approval', 'pending kip approval', 'published', 'rejected by admin',
-            'rejected by kip', 'awaiting new kip' ],
-        default: 'draft'
+        enum: [ 'pending admin review', 'admin rejected', 'admin approved', 'sent to kip', 'published' ],
+        default: 'pending admin review'
     },
-    is_visible: { type: Boolean, default: false }, // becomes true after admin aproval
-    is_rejected: { type: Boolean, default: false }, // optional
-    rejection_reason: { type: String, default: null },
-    kip_response: { type: String, enum: ['none', 'pending', 'accepted', 'rejected'], default: 'none' },
+    admin_rejection_reason: { type: String, default: null },
+    kip_id: { type: mongoose.Schema.Types.ObjectId, ref: "KIP", default: null },
+    kip_status: { type: String, enum: ['pending', 'verified', 'rejected', 'completed'], default: null },
+    kip_rejection_reason: { type: String, default: null },
     is_closed: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'scholarships' })
 

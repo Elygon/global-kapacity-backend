@@ -10,8 +10,7 @@ const crypto = require('crypto')
 const Payment = require('../../models/payment')
 const User = require('../../models/user')
 const Subscription = require('../../models/subscription')
-/*const Order = require('../../models/order')
-const Event = require('../../models/event')
+/*const Event = require('../../models/event')
 const Service = require('../../models/service');*/
 const { createPayment } = require('../../controllers/paystack') // your paystack file
 const { sendPaymentSuccessMail } = require('../../utils/nodemailer')
@@ -30,8 +29,8 @@ function verifyPaystackSignature(signature, requestBody, secretKey) {
 // Initialize payment
 router.post('/initialize', async (req, res) => {
     try {
-        const { email, amount, firstname, lastname, phone_no, payment_method, type, 
-            description, subscriptionId /*, orderId, eventId, serviceId*/ } = req.body
+        const { email, amount, firstname, lastname, phone_no, payment_method, type,
+            subscriptionId, registrationId /*eventId, serviceId*/ } = req.body
 
         // Create a unique reference
         const reference = Date.now().toString()
@@ -47,8 +46,8 @@ router.post('/initialize', async (req, res) => {
             payment_method,
             description: `${type} payment`,
             subscription: type === 'Subscription' ? subscriptionId : undefined,
-            /*orderId: type === 'order' ? orderId : undefined,
-            eventId: type === 'event' ? eventId : undefined,
+            registrationId: type === 'Registration' ? registrationId : undefined,
+            /*eventId: type === 'event' ? eventId : undefined,
             serviceId: type === 'service' ? serviceId : undefined,*/
             status: 'Pending',
         })
@@ -84,7 +83,7 @@ router.post('/confirm', async (req, res) => {
 
         if (event.event === 'charge.success') {
             const payment = await Payment.findOneAndUpdate({ reference }, { status: 'Success' }, { new: true })
-            .populate(['Subscription'/*, 'order', 'event', 'service'*/])
+            .populate(['Subscription', 'Registration', /*'event', 'service'*/])
 
             if (!payment) {
                 return console.log('Payment not found:', reference)
@@ -97,17 +96,17 @@ router.post('/confirm', async (req, res) => {
                 // Send payment confirmation email
                 await sendPaymentSuccessMail(payment.email, payment.firstname, payment.amount, payment.reference, 'Subscription')
                 console.log('Subscription payment confirmed')
-           }
+            }
 
-            /*else if (payment.order) {
-                await Order.findByIdAndUpdate(payment.order._id, { payment_status: 'Paid' })
+            else if (payment.registration) {
+                await Registration.findByIdAndUpdate(payment.registration._id, { payment_status: 'Paid' })
                 
                 // Send payment confirmation email
-                await sendPaymentSuccessMail(payment.email, payment.fullname, payment.amount, payment.reference, 'order')    
+                await sendPaymentSuccessMail(payment.email, payment.fullname, payment.amount, payment.reference, 'Registration')    
                 console.log('Order payment confirmed')
             }
 
-            else if (payment.event) {
+            /*else if (payment.event) {
                 await Event.findByIdAndUpdate(payment.event._id, { payment_status: 'Paid' })
                 
                 // Send payment confirmation email

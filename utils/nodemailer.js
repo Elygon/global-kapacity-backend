@@ -3,6 +3,10 @@ const nodemailer = require("nodemailer")
 const dotenv = require("dotenv")
 dotenv.config()
 
+
+// ----------------------
+// EMAIL TRANSPORT CONFIG
+// ----------------------
 const transport = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -10,6 +14,26 @@ const transport = nodemailer.createTransport({
         pass: process.env.MAIL_PASS
     },
 })
+
+
+// ---------------------------------------------
+// Reusable Helper (PLACE IT AT THE TOP)
+// ---------------------------------------------
+const formatRecipientName = (posted_by) => {
+    if (!posted_by) return "there"
+
+    // organization
+    if (posted_by.company_name) {
+        return posted_by.company_name;
+    }
+
+    // user
+    if (posted_by.firstname) {
+        return posted_by.firstname
+    }
+
+    return "there" // fallback
+}
 
 
 // OTP Email (User)
@@ -360,124 +384,231 @@ const sendJobHiddenMail = async (email, company_name, title) => {
 }
 
 
-// Guest Event Completed
-const sendGuestEventCompletionMail = async (email, title, hall_name, end_date) => {
+// Training Listing Approved
+const trainingApprovalMail = async (email, posted_by, title) => {
+    const name = formatRecipientName(posted_by);
+
     try {
         const info = await transport.sendMail({
-            from: `"Classic Crown Hotel" <${process.env.MAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Event Completed: ${title}`,
+            subject: `Your Training Has Been Approved ✔️`,
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Event Completed ✅</h2>
-                    <p>Dear Guest,</p>
-                    <p>Your event has been successfully completed.</p>
-                    <ul>
-                        <li><b>Event:</b> ${title}</li>
-                        <li><b>Hall:</b> ${hall_name}</li>
-                        <li><b>End Date:</b> ${new Date(end_date).toDateString()}</li>
-                    </ul>
-                    <p>We hope you had a wonderful experience with us!</p>
-                    <p>Thank you for choosing Classic Crown Hotel.</p>
+                    <h2>Training Approved ✔️</h2>
+                    <p>Dear ${name},</p>
+
+                    <p>Your training titled <b>${title}</b> has been reviewed and 
+                    <b>approved</b> by our platform administrators.</p>
+
+                    <p>The training is now live and visible to learners on the platform.</p>
+
                     <br/>
-                    <p>Warm regards,<br/>Classic Crown Hotel Management</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
-        console.log("Guest Event Completion Email sent:", info.response)
+
+        console.log("Training Approval Email Sent:", info.response)
+
     } catch (error) {
-        console.error("Error sending guest event completion email:", error)
+        console.error("Error sending Training Approval Email:", error)
     }
 }
 
 
-// const sendOTP = async (email, otp) => {
-//   try {
-//     const info = await transport
-//       .sendMail({
-//         from: `foodkart.dev@gmail.com <${process.env.MAIL_USER}>`,
-//         to: email,
-//         subject: "One Time Password",
-//         html: `<p style="line-height: 1.5">
-//         Your OTP verification code is: <br /> <br />
-//         <font size="3">${otp}</font> <br />
-//         Best regards,<br />
-//         Team FoodKart.
-//         </p>
-//         </div>`,
-//       });
+//Training Listing Rejected
+const trainingRejectionMail = async (email, posted_by, title, reason) => {
+    const name = formatRecipientName(posted_by)
 
-//     console.log("Email sent:", info.response);
-//   } catch (error) {
-//     console.error("Error sending email:", error);
-//     return { msg: "Error sending email", error };
-//   }
-// };
-
-// Guest Event Request Received
-const sendGuestEventRequestMail = async (email, fullname, event_name, date) => {
     try {
         const info = await transport.sendMail({
-            from: `"Classic Crown Hotel"  <${process.env.MAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Event Booking Request Received - ${event_name}`,
+            subject: `Your Training Could Not Be Approved`,
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Event Reservation Request Received 🎉</h2>
-                    <p>Dear ${fullname || "Guest"},</p>
-                    <p>Your request for the event <b>${event_name}</b> has been successfully recorded.</p>
-                    <ul>
-                        <li><b>Date:</b> ${new Date(date).toDateString()}</li>
-                        <li><b>Status:</b> Pending Staff Approval</li>
-                    </ul>
-                    <p>Our management team will review your request and assign a suitable hall shortly.</p>
+                    <h2>Training Rejected ❌</h2>
+                    <p>Dear ${name},</p>
+
+                    <p>Your training titled <b>${title}</b> has been reviewed, 
+                    but cannot be approved at this time.</p>
+
+                    ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
+
+                    <p>You may update the training details and submit it again for review.</p>
+
                     <br/>
-                    <p>Warm regards,<br/>Hotel Events Team</p>
+                    <p>Best regards,<br/>Global Kapacity Review Team</p>
                 </div>
-            `,
+            `
         })
 
-        console.log("✅ Event Booking Request Email sent:", info.response)
-        return { status: "ok", msg: "Email sent" }
+        console.log("Training Rejection Email Sent:", info.response)
+
     } catch (error) {
-        console.error("❌ Error sending event booking request email:", error)
-        return { status: "error", msg: "Failed to send email", error }
+        console.error("Error sending Training Rejection Email:", error)
     }
 }
 
 
-// Guest Event Request Cancellation
-const sendGuestEventCancellationMail = async (email, fullname, hallName, date, status) => {
-    try {
-        // Pick the best phrase depending on approval status
-        if (hallName) {
-            hallLabel = hallName
-        } else if (status === "Pending") {
-            hallLabel = "your pending event request"
-        } else {
-            hallLabel = "your event"
-        }
+// Training Listing Hidden (taken down after complaints or suspicious observations)
+const trainingHiddenMail = async (email, posted_by, title) => {
+    const name = formatRecipientName(posted_by)
 
+    try {
         const info = await transport.sendMail({
-            from: `"Classic Crown Hotel"  <${process.env.MAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: "Event Booking Request Cancelled",
+            subject: `Your Training Has Been Temporarily Hidden`,
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Event Reservation Cancelled ❌</h2>
-                    <p>Dear ${fullname || "Guest"},</p>
-                    <p>Your reservation for <b>${hallLabel}</b> scheduled on <b>${new Date(date).toDateString()}</b> has been successfully cancelled.</p>
-                    <p>If this was a mistake, you can make a new booking anytime through our events page.</p>
-                    <p>Warm regards,<br/>Hotel Events Team</p>
+                    <h2>Training Hidden ⚠️</h2>
+                    <p>Dear ${name},</p>
+
+                    <p>Your training titled <b>${title}</b> has been hidden from public view.</p>
+
+                    <p>This action was taken because further review is required.</p>
+
+                    <p>You may update the training if needed and request another review.</p>
+
+                    <br/>
+                    <p>Best regards,<br/>Global Kapacity Safety Team</p>
                 </div>
-            `,
+            `
         })
 
-        console.log("✅ Event Cancellation Email sent:", info.response)
-        return { status: "ok", msg: "Email sent" }
+        console.log("Training Hidden Email Sent:", info.response)
+
     } catch (error) {
-        console.error("❌ Error sending event cancellation email:", error)
-        return { status: "error", msg: "Failed to send email", error }
+        console.error("Error sending Training Hidden Email:", error)
+    }
+}
+
+
+// Approved Training sent to selected Impact Partner for verification
+const trainingToKipMail = async (email, firstname, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Training Has Been Sent to the Selected Impact Partner`,
+            html: `
+                <div style="font-family: Arial; padding: 20px;">
+                    <h2>Training Forwarded to Impact Partner ✔️</h2>
+                    <p>Dear ${firstname},</p>
+
+                    <p>Your training titled <b>${title}</b> has been approved 
+                    by the admin and forwarded to your selected Impact Partner for review.</p>
+
+                    <p>The Impact Partner will either accept to manage this training 
+                    or decline it. You will be notified once we receive their response.</p>
+
+                    <br/>
+                    <p>Warm regards,<br/>Kapacity Admin Team</p>
+                </div>
+            `
+        })
+
+        console.log("Training To Selected Impact Partner Email sent:", info.response)
+        return { status: "ok", msg: "Email sent" }
+    } catch (err) {
+        console.error("Error sending user training->KIP email:", err)
+    }
+}
+
+
+// Training Listing sent for selected partner response
+const trainingNotifyKipMail = async (email, organization_name, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `You Have Been Selected as Impact Partner`,
+            html: `
+                <div style="font-family: Arial; padding: 20px;">
+                    <h2>Impact Partner Assignment</h2>
+                    <p>Dear ${organization_name},</p>
+
+                    <p>You have been selected as the Impact Partner for the training titled 
+                    <b>${title}</b>.</p>
+
+                    <p>Please review the training details and let us know if you 
+                    <b>accept</b> or <b>decline</b> managing this training.</p>
+
+                    <p>Your decision will be forwarded to the training owner and the admin.</p>
+
+                    <br/>
+                    <p>Warm regards,<br/>Kapacity Team</p>
+                </div>
+            `
+        })
+    } catch (err) {
+        console.error("Error sending KIP notification email:", err)
+    }
+}
+
+
+// Approved Training sent to selected Impact Partner for verification
+const kipAcceptsTrainingMail = async (email, firstname, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Training Has Been Sent to the Selected Impact Partner`,
+            html: `
+                <div style="font-family: Arial; padding: 20px;">
+                    <h2>Training Forwarded to Impact Partner ✔️</h2>
+                    <p>Dear ${firstname},</p>
+
+                    <p>Your training titled <b>${title}</b> has been approved 
+                    by the admin and forwarded to your selected Impact Partner for review.</p>
+
+                    <p>The Impact Partner will either accept to manage this training 
+                    or decline it. You will be notified once we receive their response.</p>
+
+                    <br/>
+                    <p>Warm regards,<br/>Kapacity Admin Team</p>
+                </div>
+            `
+        })
+
+        console.log("Training To Selected Impact Partner Email sent:", info.response)
+        return { status: "ok", msg: "Email sent" }
+    } catch (err) {
+        console.error("Error sending user training->KIP email:", err)
+    }
+}
+
+
+// Approved Training sent to selected Impact Partner for verification
+const kipRejectsTrainingMail = async (email, firstname, title) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Your Training Has Been Sent to the Selected Impact Partner`,
+            html: `
+                <div style="font-family: Arial; padding: 20px;">
+                    <h2>Training Forwarded to Impact Partner ✔️</h2>
+                    <p>Dear ${firstname},</p>
+
+                    <p>Your training titled <b>${title}</b> has been approved 
+                    by the admin and forwarded to your selected Impact Partner for review.</p>
+
+                    <p>The Impact Partner will either accept to manage this training 
+                    or decline it. You will be notified once we receive their response.</p>
+
+                    <br/>
+                    <p>Warm regards,<br/>Kapacity Admin Team</p>
+                </div>
+            `
+        })
+
+        console.log("Training To Selected Impact Partner Email sent:", info.response)
+        return { status: "ok", msg: "Email sent" }
+    } catch (err) {
+        console.error("Error sending user training->KIP email:", err)
     }
 }
 
@@ -594,9 +725,13 @@ module.exports = {
     sendJobApprovalMail,
     sendJobRejectionMail,
     sendJobHiddenMail,
-    sendGuestEventRequestMail,
-    sendGuestEventCancellationMail,
-    sendGuestEventCompletionMail,
+    trainingApprovalMail,
+    trainingRejectionMail,
+    trainingHiddenMail,
+    trainingToKipMail,
+    trainingNotifyKipMail,
+    kipAcceptsTrainingMail, 
+    kipRejectsTrainingMail,
     sendPaymentSuccessMail,
     sendPaymentSuccessMailOrg
 }

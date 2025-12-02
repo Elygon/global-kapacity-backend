@@ -5,18 +5,19 @@ const Scholarship = require("../../models/scholarship")
 const Organization = require("../../models/organization")
 const User = require("../../models/user")
 const authToken = require("../../middleware/authToken")
+const { scholarshipApprovalMail, scholarshipRejectionMail, scholarshipHiddenMail } = require('../../utils/nodemailer')
 
 
 // ==========================
-// 1. GET ALL SCHOLARSHIPS ON PLATFORM
+// 1. GET ALL SCHOLARSHIPS ON PLATFORM (INCLUDING NON-VISIBLE SCHOLARSHIP)
 // ==========================
 router.post("/all", authToken, async (req, res) => {
     try {
-        const scholars = await Scholarship.find()
+        const scholarships = await Scholarship.find()
             .populate("posted_by", "company_name firstname lastname email") // organization or user
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: -1 }) //.populate('OrganzationId')
 
-        return res.status(200).send({ status: "ok", msg: "success", scholars })
+        return res.status(200).send({ status: "ok", msg: "success", scholarships })
     } catch (error) {
         console.error(error)
         return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
@@ -24,24 +25,15 @@ router.post("/all", authToken, async (req, res) => {
 })
 
 
+
 // ==========================
-// 2. GET A SPECIFIC SCHOLARSHIP
+// 2. GET ONLY VISIBLE SCHOLARSHIPS
 // ==========================
-router.post("/scholarship", authToken, async (req, res) => {
+router.post("/visible", authToken, async (req, res) => {
     try {
-        const { scholarshipId } = req.body
+        const scholarships = await Scholarship.find({ is_visible: true })
 
-        if (!scholarshipId) {
-            return res.status(400).send({ status: "error", msg: "Scholarship ID is required" })
-        }
-
-        const scholar = await Scholarship.findById(scholarshipId).populate("posted_by", "company_name firstname lastname email")
-
-        if (!scholar) {
-            return res.status(404).send({ status: "error", msg: "Scholarship not found" })
-        }
-
-        return res.status(200).send({ status: "ok", msg: "success", scholar })
+        return res.status(200).send({ status: "ok", msg: "success", scholarships })
     } catch (error) {
         console.error(error)
         return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
@@ -49,55 +41,40 @@ router.post("/scholarship", authToken, async (req, res) => {
 })
 
 
-/*/ ==========================
-// 3. APPROVE OR REJECT AN ORGANIZATION'S SCHOLARSHIP
+
 // ==========================
-router.post("/sch_status", authToken, async (req, res) => {
+// 3. GET ONLY HIDDEN JOBS (ADMIN REVIEW QUEUE)
+// ==========================
+router.post("/hidden", authToken, async (req, res) => {
     try {
-        const { scholarshipId, status } = req.body
+        const jobs = await Scholarship.find({ is_visible: false })
 
-        if (!scholarshipId || !status) {
-            return res.status(400).send({ status: "error", msg: "All fields are required" })
-        }
-
-        const validStatus = ["approved", "rejected"]
-        if (!validStatus.includes(status)) {
-            return res.status(400).send({ status: "error", msg: "Invalid status value" })
-        }
-
-        const scholar = await Scholarship.findByIdAndUpdate(scholarshipId, { status }, { new: true })
-
-        if (!scholar) {
-            return res.status(404).send({ status: "error", msg: "Scholarship not found" })
-        }
-
-        return res.status(200).send({ status: "ok", msg: 'success', scholar })
+        return res.status(200).send({ status: "ok", msg: "success", jobs })
     } catch (error) {
         console.error(error)
         return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
     }
 })
-*/
 
 
 // ==========================
-// 4. FORCE CLOSE OR REMOVE A SCHOLARSHIP
+// 4. GET A SPECIFIC JOB
 // ==========================
-router.post("/close", authToken, async (req, res) => {
+router.post("/specific", authToken, async (req, res) => {
     try {
-        const { scholarshipId } = req.body
+        const { jobId } = req.body
 
-        if (!scholarshipId) {
-            return res.status(400).send({ status: "error", msg: "Scholarship ID is required" })
+        if (!jobId) {
+            return res.status(400).send({ status: "error", msg: "Job ID is required" })
         }
 
-        const scholar = await Scholarship.findByIdAndUpdate(scholarshipId, { isClosed: true }, { new: true })
+        const job = await Scholarship.findById(jobId).populate("posted_by", "company_name firstname lastname email")
 
-        if (!scholar) {
-            return res.status(404).send({ status: "error", msg: "Scholarship not found" })
+        if (!job) {
+            return res.status(404).send({ status: "error", msg: "Job not found" })
         }
 
-        return res.status(200).send({ status: "ok", msg: "success", scholar })
+        return res.status(200).send({ status: "ok", msg: "success", job })
     } catch (error) {
         console.error(error)
         return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
@@ -106,23 +83,115 @@ router.post("/close", authToken, async (req, res) => {
 
 
 // ==========================
-// 5. DELETE SCHOLARSHIP (FRAUD OR VIOLATION)
+// 5. APPROVE A JOB LISTING (ADMIN SETS IT LIVE)
+// ==========================
+router.post("/approve", authToken, async (req, res) => {
+    const { jobId } = req.body
+    
+    try {
+        const job = await Scholarship.findById(jobId).populate('posted_by', 'company_name email')
+        
+        if (!job) {
+            return res.status(404).send({ status: 'error', msg: 'Job not found' })
+        }
+        
+        // Update visibility
+        job.is_visible = true
+        await job.save()
+        
+        // Extract values for mail
+        const email = job.posted_by.email
+        const company_name = job.posted_by.company_name
+        const title = job.title
+
+        // Send Job Approval Email
+        await scholarshipApprovalMail(email, company_name, title)
+
+        return res.status(200).send({ status: "ok", msg: 'success', job })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
+    }
+})
+
+
+// ==========================
+// 6. REJECT A JOB LISTING (STILL HIDDEN BUT FLAGGED)
+// ==========================
+router.post("/reject", authToken, async (req, res) => {
+    const { jobId, reason } = req.body
+    
+    try {
+        const job = await Scholarship.findById(jobId).populate('posted_by', 'company_name email')
+
+        if (!job) {
+            return res.status(404).send({ status: 'error', msg: 'Job not found' })
+        }
+
+        // Update visibility
+        job.is_visible = false
+        job.rejection_reason = reason || 'Not specified'
+        await job.save()
+        
+        // Extract values for mail
+        const email = job.posted_by.email
+        const company_name = job.posted_by.company_name
+        const title = job.title
+
+        // Send Job Rejection Email
+        await scholarshipRejectionMail(email, company_name, title, reason)
+
+        return res.status(200).send({ status: "ok", msg: 'success', job })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
+    }
+})
+
+
+// ==========================
+// 7. HIDE A PREVIOUSLY APPROVED JOB
+// ==========================
+router.post("/hide", authToken, async (req, res) => {
+    const { jobId } = req.body    
+    
+    try {
+        const job = await Scholarship.findById(jobId).populate('posted_by', 'company_name email')
+
+        if (!job) {
+            return res.status(404).send({ status: "error", msg: "Job not found" })
+        }
+
+        // Update visibility
+        job.is_visible = false
+        await job.save()
+        
+        // Extract values for mail
+        const email = job.posted_by.email
+        const company_name = job.posted_by.company_name
+        const title = job.title
+
+        // Send Job Hidden Email
+        await scholarshipHiddenMail(email, company_name, title)
+
+        return res.status(200).send({ status: "ok", msg: "success", job })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })
+    }
+})
+
+
+// ==========================
+// 8. DELETE JOB (FRAUD OR VIOLATION)
 // ==========================
 router.post("/delete", authToken, async (req, res) => {
+    const { jobId } = req.body
+        
     try {
-        const { scholarshipId } = req.body
+        const job = await Scholarship.findByIdAndDelete(jobId)
 
-        if (!scholarshipId) {
-            return res.status(400).send({ status: "error", msg: "Scholarship ID is required" })
-        }
-
-        const scholar = await Scholarship.findByIdAndDelete(scholarshipId)
-
-        if (!scholar) {
-            return res.status(404).send({ status: "error", msg: "Scholarship not found" })
-        }
-
-        return res.status(200).send({ status: "ok", msg: "success" })
+        return res.status(200).send({ status: "ok", msg: "success", job })
     } catch (error) {
         console.error(error)
         return res.status(500).send({ status: "error", msg: "Error occurred", error: error.message })

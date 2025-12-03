@@ -5,7 +5,7 @@ const cloudinary = require('../../utils/cloudinary')
 const uploader = require('../../utils/multer')
 
 const Job = require("../../models/job")
-const JobApplication = require("../../models/job_application")
+const Application = require("../../models/application")
 const authToken = require("../../middleware/authToken") // your auth middleware
 const { preventFreemiumDetailView } = require("../../middleware/freemiumlimit")
 
@@ -58,7 +58,7 @@ router.post("/apply", authToken, preventFreemiumDetailView, uploader.fields([
         }
 
         // Create job application
-        const application = new JobApplication({
+        const application = new Application({
             job_id: jobId,
             applicant_id: userId,
             message: message || "",
@@ -83,7 +83,7 @@ router.post("/apply", authToken, preventFreemiumDetailView, uploader.fields([
 router.post("/my_applications", authToken, preventFreemiumDetailView, async (req, res) => {
     try {
         const userId = req.user._id
-        const applications = await JobApplication.find({ applicantId: userId })
+        const applications = await Application.find({ applicantId: userId })
             .populate("jobId", "title company_name location")
             .sort({ createdAt: -1 })
 
@@ -107,7 +107,7 @@ router.post("/application", authToken, preventFreemiumDetailView, async (req, re
             return res.status(400).send({ status: "error", msg: "Application ID is required" })
         }
 
-        const application = await JobApplication.findOne({ _id: applicationId, applicantId: userId })
+        const application = await Application.findOne({ _id: applicationId, applicantId: userId })
             .populate("jobId", "title company_name location description")
 
         if (!application) {
@@ -135,7 +135,7 @@ router.post("/withdraw", authToken, preventFreemiumDetailView, async (req, res) 
             return res.status(400).send({ status: "error", msg: "Application ID is required" })
         }
 
-        const application = await JobApplication.findOneAndDelete({ _id: applicationId, applicantId: userId })
+        const application = await Application.findOneAndDelete({ _id: applicationId, applicantId: userId })
 
         if (!application) {
             return res.status(404).send({ status: "error", msg: "Application not found or already withdrawn" })

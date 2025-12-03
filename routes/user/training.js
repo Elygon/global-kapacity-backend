@@ -17,7 +17,7 @@ const { preventFreemiumDetailView } = require("../../middleware/freemiumlimit")
 // ==========================
 router.post("/browse", authToken, async (req, res) => {
     try {
-        const trainings = await Training.find().sort({ createdAt: -1 })
+        const trainings = await Training.find({ is_visible: true }).sort({ createdAt: -1 })
         res.status(200).send({ status: "ok", msg: 'success', trainings })
     } catch (error) {
         res.status(500).send({ status: "error", message: "Server error", error: error.message })
@@ -25,60 +25,85 @@ router.post("/browse", authToken, async (req, res) => {
 })
 
 
-/*/ ==========================
-// 2. Search / Filter scholarships
-// =======================
+// ==========================
+// 2. Search / Filter Trainings
+// ==========================
 router.post("/search", authToken, async (req, res) => {
     try {
         const {
-            keyword,        // search by name or university
-            field_of_study,
-            scholarship_type,
-            region,
-            gender_based,
-            date_posted,     // all, last_24_hours, last_3_days, last_7_days, last_14_days, last_30_days, over_1_month
-            mode_of_study
+            keyword,            // search: title, short_desc, tags
+            min_price,
+            max_price,
+            industry,
+            opportunity_type,
+            country,
+            state,
+            city,
+            date_posted         // all, 24h, 7d, 30d, 6m, 1y, etc.
         } = req.body
 
-        const filter = {}
+        const filter = {
+            is_visible: true // only visible trainings
+        }
 
-        // Keyword search on name or university
+        // -----------------------------------------
+        // Keyword search (title, description, tags)
+        // -----------------------------------------
         if (keyword) {
             filter.$or = [
-                { name: { $regex: keyword, $options: "i" } },
-                { university: { $regex: keyword, $options: "i" } }
+                { title: { $regex: keyword, $options: "i" } },
+                { short_desc: { $regex: keyword, $options: "i" } },
+                { tags: { $regex: keyword, $options: "i" } }
             ]
         }
 
-        // Filters
-        if (field_of_study) filter.field_of_study = field_of_study
-        if (scholarship_type) filter.scholarship_type = scholarship_type
-        if (region) filter.region = region
-        if (gender_based) filter.gender_based = gender_based
-        if (mode_of_study) filter.mode_of_study = mode_of_study
+        // -----------------------------------------
+        // Price range
+        // -----------------------------------------
+        if (min_price || max_price) {
+            filter.price = {}
+            if (min_price) filter.price.$gte = Number(min_price)
+            if (max_price) filter.price.$lte = Number(max_price)
+        }
 
-        // Date posted filter
+        // -----------------------------------------
+        // Other filters
+        // -----------------------------------------
+        if (industry) filter.industry = industry
+        if (opportunity_type) filter.opportunity_type = opportunity_type
+        if (country) filter.country = country
+        if (state) filter.state = state
+        if (city) filter.city = city
+
+        // -----------------------------------------
+        // Date Posted Filter
+        // -----------------------------------------
         if (date_posted && date_posted !== "all") {
             const dateLimit = getDateFromPeriod(date_posted)
+
             if (dateLimit === "over_1_month") {
-                // scholarships older than 30 days
-                const thirtyDaysAgo = new Date();
+                // Trainings older than 30 days
+                const thirtyDaysAgo = new Date()
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
                 filter.createdAt = { $lt: thirtyDaysAgo }
-            } else if (dateLimit) {
+            } 
+            else if (dateLimit) {
                 filter.createdAt = { $gte: dateLimit }
             }
         }
 
-        const scholarships = await Scholarship.find(filter).sort({ createdAt: -1 })
+        // -----------------------------------------
+        // Query DB
+        // -----------------------------------------
+        const trainings = await Training.find(filter).sort({ createdAt: -1 })
 
-        res.status(200).send({ status: "ok", msg: "success", scholarships })
+        res.status(200).send({ status: "ok", msg: "success", trainings })
 
     } catch (error) {
         res.status(500).send({ status: "error", msg: "Server error", error: error.message })
     }
 })
-*/
+
 
 // ==========================
 // 3. View single training
@@ -88,7 +113,9 @@ router.post("/single",  authToken, preventFreemiumDetailView, async (req, res) =
         const { trainingId } = req.body
 
         const training = await Training.findById(trainingId)
-        if (!training) return res.status(404).send({ status: "error", msg: "Training not found" })
+        if (!training || !training.is_visible) {
+            return res.status(404).send({ status: "error", msg: "Training not found" })
+        }
 
         res.status(200).send({ status: "ok", msg: "success", training })
     } catch (error) {
@@ -391,7 +418,7 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
         if (training.step !== 3)
             return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing'})
 
-        training.admin_status = 'pending admin review'
+        training.admin_status = 'submitted'
         training.updatedAt = Date.now()
 
         await training.save()

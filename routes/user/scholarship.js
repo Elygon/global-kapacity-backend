@@ -15,7 +15,7 @@ const { preventFreemiumDetailView } = require("../../middleware/freemiumlimit")
 // ==========================
 router.post("/browse", authToken, async (req, res) => {
     try {
-        const scholarships = await Scholarship.find().sort({ createdAt: -1 })
+        const scholarships = await Scholarship.find({ is_visible: true }).sort({ createdAt: -1 })
         res.status(200).send({ status: "ok", msg: 'success', scholarships })
     } catch (error) {
         res.status(500).send({ status: "error", message: "Server error", error: error.message })
@@ -37,8 +37,10 @@ router.post("/search", authToken, async (req, res) => {
             mode_of_study
         } = req.body
 
-        const filter = {}
-
+        const filter = {
+            is_visible: true // only visible scholarships
+        }
+        
         // Keyword search on name or university
         if (keyword) {
             filter.$or = [
@@ -84,7 +86,9 @@ router.post("/single",  authToken, preventFreemiumDetailView, async (req, res) =
         const { scholarshipId } = req.body
 
         const scholarship = await Scholarship.findById(scholarshipId)
-        if (!scholarship) return res.status(404).send({ status: "error", msg: "Scholarship not found" })
+        if (!scholarship || !scholarship.is_visible) {
+            return res.status(404).send({ status: "error", msg: "Scholarship not found" })
+        }
 
         res.status(200).send({ status: "ok", msg: "success", scholarship })
     } catch (error) {
@@ -319,7 +323,7 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
         if (scholarship.step !== 3)
             return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing'})
 
-        scholarship.admin_status = 'pending admin review'
+        scholarship.admin_status = 'submitted'
         scholarship.updatedAt = Date.now()
 
         await scholarship.save()

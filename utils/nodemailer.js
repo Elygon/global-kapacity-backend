@@ -385,8 +385,11 @@ const sendJobHiddenMail = async (email, company_name, title) => {
 
 
 // Training Listing Approved
-const trainingApprovalMail = async (email, posted_by, title) => {
-    const name = formatRecipientName(posted_by);
+const trainingApprovalMail = async (email, name, title, posted_by_model) => {
+    // Determine message depending on who posted
+    const visibilityMessage = posted_by_model === "Organization"
+        ? "Your training is now live and visible to learners on the platform."
+        : "Your training has been approved by the admin and is awaiting confirmation from your selected Impact Partner before going live."
 
     try {
         const info = await transport.sendMail({
@@ -398,10 +401,9 @@ const trainingApprovalMail = async (email, posted_by, title) => {
                     <h2>Training Approved ✔️</h2>
                     <p>Dear ${name},</p>
 
-                    <p>Your training titled <b>${title}</b> has been reviewed and 
-                    <b>approved</b> by our platform administrators.</p>
+                    <p>Your training titled <b>${title}</b> has been reviewed and <b>approved</b> by our platform administrators.</p>
 
-                    <p>The training is now live and visible to learners on the platform.</p>
+                    <p>${visibilityMessage}</p>
 
                     <br/>
                     <p>Best regards,<br/>Global Kapacity Team</p>
@@ -410,7 +412,6 @@ const trainingApprovalMail = async (email, posted_by, title) => {
         })
 
         console.log("Training Approval Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Training Approval Email:", error)
     }
@@ -629,8 +630,11 @@ const kipRejectsTrainingMail = async (email, firstname, title, kip_rejection_rea
 
 
 // Scholarship Listing Approved
-const scholarshipApprovalMail = async (email, posted_by, title) => {
-    const name = formatRecipientName(posted_by);
+const scholarshipApprovalMail = async (email, name, title, posted_by_model) => {
+    // Determine message depending on who posted
+    const visibilityMessage = posted_by_model === "Organization"
+        ? "Your scholarship is now live and visible to learners on the platform."
+        : "Your scholarship has been approved by the admin and is awaiting confirmation from your selected Impact Partner before going live."
 
     try {
         const info = await transport.sendMail({
@@ -642,10 +646,9 @@ const scholarshipApprovalMail = async (email, posted_by, title) => {
                     <h2>Scholarship Approved ✔️</h2>
                     <p>Dear ${name},</p>
 
-                    <p>Your scholarship titled <b>${title}</b> has been reviewed and 
-                    <b>approved</b> by our platform administrators.</p>
+                    <p>Your scholarship titled <b>${title}</b> has been reviewed and <b>approved</b> by our platform administrators.</p>
 
-                    <p>The scholarship is now live and visible to learners on the platform.</p>
+                    <p>${visibilityMessage}</p>
 
                     <br/>
                     <p>Best regards,<br/>Global Kapacity Team</p>
@@ -654,7 +657,6 @@ const scholarshipApprovalMail = async (email, posted_by, title) => {
         })
 
         console.log("Scholarship Approval Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Scholarship Approval Email:", error)
     }
@@ -870,7 +872,6 @@ const kipRejectsScholarshipMail = async (email, firstname, title, kip_rejection_
         console.error("Error sending KIP Rejects Scholarship Email:", error)
     }
 }
-
 
 
 // User Payment Confirmation

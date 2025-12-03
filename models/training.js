@@ -72,13 +72,14 @@ const trainingSchema = new mongoose.Schema({
     // After Training Posting has been submitting
     admin_status: {
         type: String,
-        enum: [ 'pending admin review', 'admin rejected', 'admin approved', 'sent to kip', 'published' ],
-        default: 'pending admin review'
+        enum: [ 'submitted', 'rejected', 'approved', 'sent to kip' ],
+        default: 'submitted'
     },
     admin_rejection_reason: { type: String, default: null },
     kip_id: { type: mongoose.Schema.Types.ObjectId, ref: "KIP", default: null },
     kip_status: { type: String, enum: ['pending', 'verified', 'rejected', 'completed'], default: null },
     kip_rejection_reason: { type: String, default: null },
+    is_visible: { type: Boolean, default: false },
     is_closed: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'trainings' })
 

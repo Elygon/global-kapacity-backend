@@ -4,7 +4,7 @@ const router = express.Router()
 const authToken = require("../../middleware/authToken")
 const { isPremiumOrg } = require("../../middleware/opportunityPost")
 const Job = require("../../models/job")
-const JobApplication = require("../../models/job_application")
+const Application = require("../../models/application")
 
 
 
@@ -22,7 +22,7 @@ router.post("/applicants", authToken, isPremiumOrg, async (req, res) => {
             return res.status(404).send({ status: 'error', msg: "Job not found" })
         }
 
-        const applicants = await JobApplication.find({ jobId })
+        const applicants = await Application.find({ jobId })
         .populate({ path: "applicantId", select: 'firstname lastname email phone_no',
             populate: { path: 'profile', select: 'profile_img_url' }
         })
@@ -47,7 +47,7 @@ router.post("/applicant", authToken, isPremiumOrg, async (req, res) => {
             return res.status(404).send({ status: 'error', msg: "Job not found" })
         }
 
-        const application = await JobApplication.findOne({ _id: applicationId, jobId})
+        const application = await Application.findOne({ _id: applicationId, jobId})
         .populate({ path: "applicantId", select: 'firstname lastname email phone_no about',
             populate: { path: 'profile', select: 'profile_img_url' }
         })
@@ -82,7 +82,7 @@ router.post("/applicant_status", authToken, isPremiumOrg, async (req, res) => {
             return res.status(404).send({ status: 'error', msg: "Job not found" })
         }
 
-        const updated = await JobApplication.findOneAndUpdate({ _id: applicationId, jobId }, { status }, { new: true })
+        const updated = await Application.findOneAndUpdate({ _id: applicationId, jobId }, { status }, { new: true })
 
         if (!updated) {
             return res.status(404).send({ status: 'error' , msg: "Application not found" })
@@ -109,7 +109,7 @@ router.post("/applicant_cv", authToken, isPremiumOrg, async (req, res) => {
             return res.status(404).send({ status: 'error', msg: "Job not found" })
         }
 
-        const application = await JobApplication.findOne({ _id: applicationId, jobId })
+        const application = await Application.findOne({ _id: applicationId, jobId })
 
         if (!application) {
             return res.status(404).send({ status: 'error', msg: "Application not found." })

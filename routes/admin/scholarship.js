@@ -31,7 +31,7 @@ router.post("/all", authToken, async (req, res) => {
 // ======================================================================
 router.post('/pending', authToken, async (req, res) => {
     try {
-        const scholarships = await Scholarship.find({ admin_status: "pending admin review" })
+        const scholarships = await Scholarship.find({ admin_status: "submitted" })
 
         return res.status(200).send({ status: "ok", msg: 'success', scholarships })
     } catch (error) {
@@ -83,30 +83,35 @@ router.post("/approve", authToken, async (req, res) => {
         }
 
         // ADMIN APPROVES
-        scholarship.admin_status = "admin approved"
+        scholarship.admin_status = "approved"
 
-        // If posted by ORGANIZATION → publish immediately
+        // Determine recipient info dynamically
+        const recipientEmail = scholarship.posted_by.email
+        const recipientName = scholarship.posted_by_model === "Organization"
+            ? (scholarship.posted_by.company_name || scholarship.posted_by.firstname)
+            : scholarship.posted_by.firstname
+
+
+         // Organization → immediately visible
         if (scholarship.posted_by_model === "Organization") {
-            scholarship.admin_status = "published"
-            await scholarship.save()
-
-            // Send approval mail
-            await scholarshipApprovalMail(
-                scholarship.posted_by.email,
-                scholarship.posted_by.company_name || scholarship.posted_by.firstname,
-                scholarship.title
-            )
-
-            return res.status(200).send({ status: "ok", msg: "Scholarship approved and published", scholarship })
+            scholarship.is_visible = true
+        } else {
+            // User → not visible yet, pending KIP
+            scholarship.is_visible = false
+            scholarship.kip_status = "pending"
         }
 
-        // If posted by USER → must go to KIP next
+        // Save before sending mail
         await scholarship.save()
 
-        await scholarshipApprovalMail( scholarship.posted_by.email, scholarship.posted_by.firstname, scholarship.title )
+        // Send approval mail once to poster
+        await scholarshipApprovalMail(recipientEmail, recipientName, scholarship.title)
 
-        return res.status(200).send({ status: "ok",
-            msg: "Scholarship approved, waiting for Impact Partner response",
+        return res.status(200).send({
+            status: "ok",
+            msg: scholarship.posted_by_model === "Organization"
+                ? "Scholarship approved and published"
+                : "Scholarship approved, waiting for Impact Partner response",
             scholarship
         })
 
@@ -130,7 +135,8 @@ router.post("/reject", authToken, async (req, res) => {
             return res.status(404).send({ status: "error", msg: "Scholarship not found" })
         }
 
-        scholarship.admin_status = "admin rejected"
+        scholarship.is_visible = false
+        scholarship.admin_status = "rejected"
         scholarship.admin_rejection_reason = reason || "No reason provided"
 
         await scholarship.save()
@@ -177,7 +183,7 @@ router.patch("/send_to_kip", authToken, async (req, res) => {
             })
         }
 
-        if (scholarship.admin_status !== "admin approved") {
+        if (scholarship.admin_status !== "approved") {
             return res.status(400).send({
                 status: "error",
                 msg: "Admin must approve before sending to Impact Partner"
@@ -218,7 +224,11 @@ router.post("/hide", authToken, async (req, res) => {
             return res.status(404).send({ status: "error", msg: "Scholarship not found" })
         }
 
-        scholarship.admin_status = "pending admin review"
+        if (!scholarship.is_visible) {
+            return res.status(400).send({ status: "error", msg: "Scholarship is already hidden" });
+        }
+
+        scholarship.is_visible = false
 
         await scholarship.save()
 
@@ -228,10 +238,10 @@ router.post("/hide", authToken, async (req, res) => {
             scholarship.title
         )
 
-        return res.status(200).send({ status: "ok", training: scholarship })
+        return res.status(200).send({ status: "ok", msg: 'success', scholarship })
 
     } catch (error) {
-        return res.status(500).send({ status: "error", error: error.message })
+        return res.status(500).send({ status: "error", msg: 'Server error', error: error.message })
     }
 })
 

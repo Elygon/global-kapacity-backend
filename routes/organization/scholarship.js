@@ -138,6 +138,11 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
         if (scholarship.step !== 3)
             return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing'})
 
+        scholarship.admin_status = 'submitted'
+        scholarship.updatedAt = Date.now()
+
+        await scholarship.save()
+
         return res.status(200).send({ status: 'ok', msg: 'success', scholarship })
     } catch (e) {
         if (e.name === 'JsonWebTokenError')

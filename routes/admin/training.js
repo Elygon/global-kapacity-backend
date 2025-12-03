@@ -31,7 +31,7 @@ router.post("/all", authToken, async (req, res) => {
 // ======================================================================
 router.post('/pending', authToken, async (req, res) => {
     try {
-        const trainings = await Training.find({ admin_status: "pending admin review" })
+        const trainings = await Training.find({ admin_status: "submitted" })
 
         return res.status(200).send({ status: "ok", msg: 'success', trainings })
     } catch (error) {
@@ -83,30 +83,35 @@ router.post("/approve", authToken, async (req, res) => {
         }
 
         // ADMIN APPROVES
-        training.admin_status = "admin approved"
+        training.admin_status = "approved"
 
-        // If posted by ORGANIZATION → publish immediately
+        // Determine recipient info dynamically
+        const recipientEmail = training.posted_by.email
+        const recipientName = training.posted_by_model === "Organization"
+            ? (training.posted_by.company_name || training.posted_by.firstname)
+            : training.posted_by.firstname
+
+
+         // Organization → immediately visible
         if (training.posted_by_model === "Organization") {
-            training.admin_status = "published"
-            await training.save()
-
-            // Send approval mail
-            await trainingApprovalMail(
-                training.posted_by.email,
-                training.posted_by.company_name || training.posted_by.firstname,
-                training.title
-            )
-
-            return res.status(200).send({ status: "ok", msg: "Training approved and published", training })
+            training.is_visible = true
+        } else {
+            // User → not visible yet, pending KIP
+            training.is_visible = false
+            training.kip_status = "pending"
         }
 
-        // If posted by USER → must go to KIP next
+        // Save before sending mail
         await training.save()
+            
+        // Send approval mail once to poster
+        await trainingApprovalMail(recipientEmail, recipientName, training.title)
 
-        await trainingApprovalMail( training.posted_by.email, training.posted_by.firstname, training.title )
-
-        return res.status(200).send({ status: "ok",
-            msg: "Training approved, waiting for Impact Partner response",
+        return res.status(200).send({
+            status: "ok",
+            msg: training.posted_by_model === "Organization"
+                ? "Training approved and published"
+                : "Training approved, waiting for Impact Partner response",
             training
         })
 
@@ -130,7 +135,8 @@ router.post("/reject", authToken, async (req, res) => {
             return res.status(404).send({ status: "error", msg: "Training not found" })
         }
 
-        training.admin_status = "admin rejected"
+        training.is_visible = false
+        training.admin_status = "rejected"
         training.admin_rejection_reason = reason || "No reason provided"
 
         await training.save()
@@ -154,7 +160,7 @@ router.post("/reject", authToken, async (req, res) => {
 // ======================================================================
 // 6. ADMIN SENDS APPROVED USER-TRAINING TO SELECTED KIP
 // ======================================================================
-router.patch("/send_to_kip", authToken, async (req, res) => {
+router.post("/send_to_kip", authToken, async (req, res) => {
     try {
         const { trainingId, kipId, kipModel } = req.body
 
@@ -177,7 +183,7 @@ router.patch("/send_to_kip", authToken, async (req, res) => {
             })
         }
 
-        if (training.admin_status !== "admin approved") {
+        if (training.admin_status !== "approved") {
             return res.status(400).send({
                 status: "error",
                 msg: "Admin must approve before sending to Impact Partner"
@@ -217,7 +223,11 @@ router.post("/hide", authToken, async (req, res) => {
             return res.status(404).send({ status: "error", msg: "Training not found" })
         }
 
-        training.admin_status = "pending admin review"
+        if (!training.is_visible) {
+            return res.status(400).send({ status: "error", msg: "Training is already hidden" });
+        }
+
+        training.is_visible = false
 
         await training.save()
 
@@ -227,10 +237,10 @@ router.post("/hide", authToken, async (req, res) => {
             training.title
         )
 
-        return res.status(200).send({ status: "ok", training })
+        return res.status(200).send({ status: "ok", msg: 'success', training })
 
     } catch (error) {
-        return res.status(500).send({ status: "error", error: error.message })
+        return res.status(500).send({ status: "error", msg: 'Server error', error: error.message })
     }
 })
 

@@ -1,7 +1,7 @@
 const express = require("express")
 const router = express.Router()
 
-const JobApplication = require("../../models/job_application")
+const Application = require("../../models/application")
 const Job = require("../../models/job")
 const User = require("../../models/user")
 const Organization = require("../../models/organization")
@@ -14,7 +14,7 @@ const authToken = require("../../middleware/authToken")
 // ==========================
 router.post("/all", authToken, async (req, res) => {
     try {
-        const apps = await JobApplication.find()
+        const apps = await Application.find()
             .populate("jobId", "title description responsibilities requirements preferred_skills deadline posted_by")
             .populate("applicantId", "firstname lastname email phone_no profile_img_url")
             .sort({ createdAt: -1 })
@@ -34,7 +34,7 @@ router.post("/all", authToken, async (req, res) => {
 // ==========================
 // 2. GET APPLICATIONS FOR A SPECIFIC JOB
 // ==========================
-router.post("/application", authToken, async (req, res) => {
+router.post("/job_applications", authToken, async (req, res) => {
     const {jobId} = req.body
     if (!jobId) {
         return res.status(400).send({ status: 'error', msg: 'Job ID is required' })
@@ -46,7 +46,7 @@ router.post("/application", authToken, async (req, res) => {
             return res.status(404).send({ status: "error", msg: "Job not found" })
         }
 
-        const apps = await JobApplication.findById({ job_id: jobId })
+        const apps = await Application.findById({ job_id: jobId })
         .populate("applicantId", "firstname lastname email phone_no profile_img_url")
         
         if (!apps.length) {
@@ -64,14 +64,14 @@ router.post("/application", authToken, async (req, res) => {
 // ==========================
 // 3. GET APPLICATIONS by A SPECIFIC USER
 // ==========================
-router.post("/application", authToken, async (req, res) => {
+router.post("/user_applications", authToken, async (req, res) => {
     const {userId} = req.body
     if (!userId) {
         return res.status(400).send({ status: 'error', msg: 'User ID is required' })
     }
 
     try {
-        const apps = await JobApplication.findById({ applicant_id: userId })
+        const apps = await Application.findById({ applicant_id: userId })
         .populate("jobId", "title description responsibilities requirements preferred_skills deadline posted_by")
 
         if (!apps.length) {
@@ -88,7 +88,7 @@ router.post("/application", authToken, async (req, res) => {
 
 
 // ==========================
-// 2. VIEW A SPECIFIC APPLICATION
+// 4. VIEW A SPECIFIC APPLICATION
 // ==========================
 router.post("/application", authToken, async (req, res) => {
     try {
@@ -98,7 +98,7 @@ router.post("/application", authToken, async (req, res) => {
             return res.status(400).send({ status: "error", msg: "Application ID is required" })
         }
 
-        const application = await JobApplication.findById(applicationId)
+        const application = await Application.findById(applicationId)
             .populate("jobId", "title postedBy")
             .populate("applicantId", "fullName email phone_number profile_img_url about")
 
@@ -115,7 +115,7 @@ router.post("/application", authToken, async (req, res) => {
 
 
 // ==========================
-// 3. FLAG APPLICATION (Suspicious Activity)
+// 5. FLAG APPLICATION (Suspicious Activity)
 // ==========================
 router.post("/flag", authToken, async (req, res) => {
     try {
@@ -125,7 +125,7 @@ router.post("/flag", authToken, async (req, res) => {
             return res.status(400).json({ status: "error", msg: "All fields are required" })
         }
 
-        const application = await JobApplication.findByIdAndUpdate(
+        const application = await Application.findByIdAndUpdate(
             applicationId,
             { flagged: true, flag_reason },
             { new: true }
@@ -145,12 +145,12 @@ router.post("/flag", authToken, async (req, res) => {
 
 
 // ==========================
-// 4. LIST OF FLAGGED APPLICATIONS
+// 6. LIST OF FLAGGED APPLICATIONS
 // ==========================
 router.post('/flagged', authToken, async (req, res) => {
     try {
         // Fetch all flagged applications
-        const flagged = await JobApplication.find({ is_flagged: true })
+        const flagged = await Application.find({ is_flagged: true })
             .populate('jobId', 'title posted_by')
             .populate('applicant_id', 'firstname lastname email phone_no profile_img_url').sort({ createdAt: -1 })
 
@@ -167,7 +167,7 @@ router.post('/flagged', authToken, async (req, res) => {
 
 
 // ==========================
-// 5. DELETE APPLICATION (Fraud or Spam)
+// 7. DELETE APPLICATION (Fraud or Spam)
 // ==========================
 router.post("/delete", authToken, async (req, res) => {
     try {
@@ -177,7 +177,7 @@ router.post("/delete", authToken, async (req, res) => {
             return res.status(400).send({ status: "error", msg: "Application ID is required" })
         }
 
-        const application = await JobApplication.findByIdAndDelete(applicationId)
+        const application = await Application.findByIdAndDelete(applicationId)
 
         if (!application) {
             return res.status(404).send({ status: "error", msg: "Application not found" })

@@ -13,7 +13,7 @@ const Subscription = require('../../models/subscription')
 /*const Event = require('../../models/event')
 const Service = require('../../models/service');*/
 const { createPayment } = require('../../controllers/paystack') // your paystack file
-const { sendPaymentSuccessMail } = require('../../utils/nodemailer')
+const { sendPaymentSuccessMail, sendSubscriptionSuccessEmail } = require('../../utils/nodemailer')
 
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_TEST_SECRET_KEY
@@ -46,7 +46,7 @@ router.post('/initialize', async (req, res) => {
             payment_method,
             description: `${type} payment`,
             subscription: type === 'Subscription' ? subscriptionId : undefined,
-            registrationId: type === 'Registration' ? registrationId : undefined,
+            registration: type === 'Registration' ? registrationId : undefined,
             /*eventId: type === 'event' ? eventId : undefined,
             serviceId: type === 'service' ? serviceId : undefined,*/
             status: 'Pending',
@@ -83,7 +83,7 @@ router.post('/confirm', async (req, res) => {
 
         if (event.event === 'charge.success') {
             const payment = await Payment.findOneAndUpdate({ reference }, { status: 'Success' }, { new: true })
-            .populate(['Subscription', 'Registration', /*'event', 'service'*/])
+                .populate(['subscription', 'registration'/*, 'event', 'service'*/])
 
             if (!payment) {
                 return console.log('Payment not found:', reference)
@@ -91,19 +91,49 @@ router.post('/confirm', async (req, res) => {
 
             // Handle payment depending on its type
             if (payment.subscription) {
-                await Subscription.findByIdAndUpdate(payment.subscription._id, { payment_status: 'Paid' })
-            
-                // Send payment confirmation email
-                await sendPaymentSuccessMail(payment.email, payment.firstname, payment.amount, payment.reference, 'Subscription')
-                console.log('Subscription payment confirmed')
+                // Update Subscription status
+                const subscription = await Subscription.findByIdAndUpdate(
+                    payment.subscription._id,
+                    { payment_status: 'Paid', is_active: true },
+                    { new: true }
+                )
+
+                // Update User Premium Status
+                const user = await User.findByIdAndUpdate(
+                    payment.subscription.user_id,
+                    {
+                        is_premium_user: true,
+                        sub_plan: subscription.plan,
+                        expiry_date: subscription.end_date,
+                        subscription: {
+                            plan_id: subscription._id, // or plan_id if available, but subscription._id is safer for reference
+                            billing_cycle: subscription.plan,
+                            start_date: subscription.start_date,
+                            end_date: subscription.end_date,
+                            status: "active"
+                        }
+                    },
+                    { new: true }
+                )
+
+                // Send subscription success email
+                await sendSubscriptionSuccessEmail(
+                    payment.email,
+                    payment.firstname,
+                    subscription.plan,
+                    payment.amount,
+                    subscription.plan
+                )
+
+                console.log('Subscription payment confirmed and user updated')
             }
 
             else if (payment.registration) {
                 await Registration.findByIdAndUpdate(payment.registration._id, { payment_status: 'Paid' })
-                
+
                 // Send payment confirmation email
-                await sendPaymentSuccessMail(payment.email, payment.fullname, payment.amount, payment.reference, 'Registration')    
-                console.log('Order payment confirmed')
+                await sendPaymentSuccessMail(payment.email, payment.firstname, payment.amount, payment.reference, 'Registration')
+                console.log('Registration payment confirmed and user notified')
             }
 
             /*else if (payment.event) {
@@ -149,7 +179,7 @@ router.post('/view', authToken, async (req, res) => {
     } catch (error) {
         console.error('Error fetching payments:', error.message);
         return res.status(500).send({ status: 'error', msg: 'Failed to fetch payments' })
-   }
+    }
 })
 
 

@@ -8,8 +8,10 @@ const FAQ = require("../../models/faq.js")
 router.post("/all", async (req, res) => {
     try {
         const faqs = await FAQ.find().sort({ timestamp: -1 })
-
-        return res.status(200).send({status: 'ok', msg: 'success', faqs})
+        if (!faqs.length) {
+            return res.status(200).send({ status: 'ok', msg: 'No frequently asked questions yet', count: 0 })
+        }
+        return res.status(200).send({status: 'ok', msg: 'success', count: faqs.length, faqs})
     } catch (e) {
         /* JWT error handler commented out for now — FAQ is public,
         but can be re-enabled later if authentication is added. */

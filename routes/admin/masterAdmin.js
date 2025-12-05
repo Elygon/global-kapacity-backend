@@ -21,8 +21,8 @@ router.post('/create_account', authToken, async (req, res) => {
 
         const { firstname, lastname, email, password, phone_no, role } = req.body
 
-        if (!firstname || !lastname || !email || !password || !phone_no || !role) {
-            return res.status(400).send({ status: 'error', msg: 'All fields including role are required' })
+        if (!firstname || !lastname || !email || !password || !phone_no) {
+            return res.status(400).send({ status: 'error', msg: 'All fields are required' })
         }
 
         const existingAdmin = await Admin.findOne({ email })
@@ -47,7 +47,7 @@ router.post('/create_account', authToken, async (req, res) => {
 
 
         // Send confirmation mail (non-blocking)
-        await sendAdminAccountMail(email, password, firstname, role)
+        await sendAdminAccountMail(email, password, firstname)
 
         return res.status(201).send({ status: 'ok',
             msg: 'success',
@@ -61,7 +61,7 @@ router.post('/create_account', authToken, async (req, res) => {
 })
 
 
-// Owner edits admin account
+// Master admin edits admin account
 router.post("/edit_account", authToken, uploader.single("profile_img"), async (req, res) => {
     try {
         const { id, ...updateData } = req.body

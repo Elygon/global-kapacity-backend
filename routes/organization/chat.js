@@ -11,22 +11,48 @@ const uploader = require('../../utils/multer')
 
 
 // Start or Get a conversation
-router.post('/start', authToken, async(req, res) => {
-    const { recipientId } = req.body
+router.post('/start', authToken, async (req, res) => {
+    const { recipientId, recipientType } = req.body
     const orgId = req.user._id
+    const orgType = req.user.account_type === 'Organization' ? 'Organization' : 'User'
 
-    if (!recipientId) {
-        return res.status(400).send({ status: 'error', msg: 'Recipient ID is required' })
+    if (!recipientId || !recipientType) {
+        return res.status(400).send({ status: 'error', msg: 'All fields are required' })
     }
 
     try {
-        let conversation = await Conversation.findOne({ participants: { $all: [orgId, recipientId]} })
-        if (!conversation) {
-            conversation = new Conversation({ participants: [orgId, recipientId] })
-            await conversation.save()
-        } res.status(200).send({ status: 'ok', msg: 'success', conversation })
+        // check if conversation already exists
+        const conversation = await Conversation.findOne({
+            $and: [
+                { "participants.participant_id": orgId },
+                { "participants.participant_id": recipientId }
+            ]
+        })
+
+        if (conversation) {
+            return res.status(200).send({ status: "ok", msg: "Conversation already exists", conversation })
+        }
+
+        // Create a new conversation
+        const newConversation = new Conversation({
+            participants: [
+                {
+                    participantType: orgType,
+                    participant_id: orgId
+                },
+                {
+                    participantType: recipientType, // "User" or "Organization"
+                    participant_id: recipientId
+                }
+            ]
+        })
+
+        await newConversation.save()
+
+        res.status(200).send({ status: 'ok', msg: 'success', newConversation })
+
     } catch (e) {
-        res.status(500).send({ status: 'error', msg: 'Error occurred', error: e.message})
+        res.status(500).send({ status: 'error', msg: 'Error occurred', error: e.message })
     }
 })
 

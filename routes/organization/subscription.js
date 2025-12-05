@@ -23,10 +23,10 @@ router.post("/all", async (req, res) => {
 router.post("/buy", authToken, async (req, res) => {
     try {
         const { plan_id, billing_cycle } = req.body
-        const orgId = req.user.id   // coming from JWT
+        const orgId = req.user._id
 
         if (!plan_id || !billing_cycle) {
-            return res.status(400).send({ status: "error",msg: "all fields are required" })
+            return res.status(400).send({ status: "error", msg: "all fields are required" })
         }
 
         const plan = await Subscription.findById(plan_id)
@@ -34,7 +34,7 @@ router.post("/buy", authToken, async (req, res) => {
             return res.status(404).send({ status: "error", msg: "Subscription plan not found" })
         }
 
-        if (plan.plan_type !== "organization") {
+        if (plan.account_type !== "organization") {
             return res.status(400).send({ status: "error", msg: "This plan is not for organizations" })
         }
 
@@ -48,21 +48,22 @@ router.post("/buy", authToken, async (req, res) => {
             return res.status(400).send({ status: "error", msg: "Invalid billing cycle" })
         }
 
-        const updatedOrg = await Organization.findByIdAndUpdate(
-            orgId,
-            {
-                subscription: {
-                    plan_id,
-                    billing_cycle,
-                    start_date: now,
-                    end_date: end,
-                    status: "active"
-                }
-            },
-            { new: true }
-        )
+        // Create a new subscription record for history
+        const newSubscription = new Subscription({
+            organization_id: orgId,
+            account_type: 'organization',
+            plan: billing_cycle,
+            start_date: now,
+            end_date: end,
+            amount: plan.amount || 0,
+            is_active: false // Default to false until paid
+        })
+        await newSubscription.save()
 
-        return res.status(200).send({ status: "ok", msg: "success", data: updatedOrg })
+        // Return the subscription details for payment processing
+        return res.status(200).send({
+            status: "ok", msg: "success", data: newSubscription, subscriptionId: newSubscription._id
+        })
 
     } catch (error) {
         return res.status(500).send({ status: "error", msg: "Unexpected error", error: error.message })
@@ -73,7 +74,7 @@ router.post("/buy", authToken, async (req, res) => {
 // GET ORGANIZATION'S SUBSCRIPTION
 router.post("/view", authToken, async (req, res) => {
     try {
-        const orgId = req.user.id   // from JWT token
+        const orgId = req.user._id
 
         const org = await Organization.findById(orgId).populate("subscription.plan_id")
 
@@ -81,7 +82,8 @@ router.post("/view", authToken, async (req, res) => {
             return res.status(404).send({ status: "error", msg: "Organization not found" })
         }
 
-        return res.status(200).send({ status: "ok", msg: "success", subscription: org.subscription
+        return res.status(200).send({
+            status: "ok", msg: "success", subscription: org.subscription
         })
 
     } catch (error) {

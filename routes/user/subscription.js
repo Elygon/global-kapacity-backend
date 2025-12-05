@@ -3,7 +3,7 @@ const router = express.Router()
 
 const User = require("../../models/user")
 const Subscription = require("../../models/subscription")
-const authToken = require("../../middleware/authToken")   // corrected path
+const authToken = require("../../middleware/authToken")
 
 
 // GET ALL PLANS
@@ -23,7 +23,7 @@ router.post("/all", async (req, res) => {
 router.post("/buy", authToken, async (req, res) => {
     try {
         const { plan_id, billing_cycle } = req.body
-        const userId = req.user._id   // coming from authToken
+        const userId = req.user._id
 
         if (!plan_id || !billing_cycle) {
             return res.status(400).send({ status: "error", msg: "plan_id and billing_cycle are required" })
@@ -34,7 +34,9 @@ router.post("/buy", authToken, async (req, res) => {
             return res.status(404).send({ status: "error", msg: "Subscription plan not found" })
         }
 
-        if (plan.plan_type !== "User") {
+        // Check if plan is for User (assuming 'account_type' or 'plan_type' field exists in Subscription model for plans)
+        // The Subscription model has 'account_type'.
+        if (plan.account_type !== "user") {
             return res.status(400).send({ status: "error", msg: "This plan is not for users" })
         }
 
@@ -46,24 +48,25 @@ router.post("/buy", authToken, async (req, res) => {
         else if (billing_cycle === "yearly") end.setFullYear(end.getFullYear() + 1)
         else return res.status(400).send({ status: "error", msg: "Invalid billing cycle" })
 
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            {
-                subscription: {
-                    plan_id,
-                    billing_cycle,
-                    start_date: now,
-                    end_date: end,
-                    status: "active"
-                }
-            },
-            { new: true }
-        )
+        // Create a new subscription record for history
+        const newSubscription = new Subscription({
+            user_id: userId,
+            account_type: 'user',
+            plan: billing_cycle,
+            start_date: now,
+            end_date: end,
+            amount: plan.amount || 0,
+            is_active: false // Default to false until paid
+        })
+        await newSubscription.save()
 
-        return res.status(200).send({ status: "ok", msg: "success", data: updatedUser })
+        // Return the subscription details for payment processing
+        return res.status(200).send({ 
+            status: "ok", msg: "success", data: newSubscription, subscriptionId: newSubscription._id
+        })
 
-    } catch (error) { 
-        return res.status(500).send({ status: "error", msg: "Unexpected error", error: error.message})
+    } catch (error) {
+        return res.status(500).send({ status: "error", msg: "Unexpected error", error: error.message })
     }
 })
 

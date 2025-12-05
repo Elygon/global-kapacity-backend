@@ -1,410 +1,310 @@
 const nodemailer = require("nodemailer")
-
 const dotenv = require("dotenv")
 dotenv.config()
 
-
-// ----------------------
-// EMAIL TRANSPORT CONFIG
-// ----------------------
 const transport = nodemailer.createTransport({
     service: "gmail",
     auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS
     },
+    tls: {
+        rejectUnauthorized: false
+    }
 })
 
 
-// ---------------------------------------------
-// Reusable Helper (PLACE IT AT THE TOP)
-// ---------------------------------------------
-const formatRecipientName = (posted_by) => {
-    if (!posted_by) return "there"
-
-    // organization
-    if (posted_by.company_name) {
-        return posted_by.company_name;
-    }
-
-    // user
-    if (posted_by.firstname) {
-        return posted_by.firstname
-    }
-
-    return "there" // fallback
-}
-
-
-// OTP Email (User)
-const sendOtpEmail = async (email, firstname, otp, expiresInMinutes = 15) => {
+// ===============================
+// OTP VERIFICATION
+// ===============================
+const sendOtpEmail = async (email, otp) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: "Your verification code",
-            html: `<div>
-                <p>Hi ${firstname},</p>
-                <p>Your verification code is:</p>
-                <h2>${otp}</h2>
-                <p>This code will expire in ${expiresInMinutes} minutes.</p>
-            </div>`
-        })
-
-        console.log("OTP email sent:", info.response);
-    } catch (error) {
-        console.error("Error sending OTP email:", error);
-        return { msg: "Error sending OTP email", error };
-    }
-}
-
-// OTP Email (Organization)
-const sendOtpEmailOrg = async (email, company_name, otp, expiresInMinutes = 15) => {
-    try {
-        const info = await transport.sendMail({
-            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
-            to: email,
-            subject: "Your verification code",
-            html: `<div>
-                <p>Hi ${company_name},</p>
-                <p>Your verification code is:</p>
-                <h2>${otp}</h2>
-                <p>This code will expire in ${expiresInMinutes} minutes.</p>
-            </div>`
-        })
-
-        console.log("OTP email sent:", info.response)
-    } catch (error) {
-        console.error("Error sending OTP email:", error)
-        return { msg: "Error sending OTP email", error }
-    }
-}
-
-// Password Reset Email (User)
-const sendPasswordReset = async (email, firstname, resetPasswordCode) => {
-    try {
-        const info = await transport.sendMail({
-            from: `"Global Kapacity"  <${process.env.MAIL_USER}>`,
-            to: email,
-            subject: "Reset your password",
-            html: `<div>
-            <div style="display: flex; align-items: center;">
-                <img alt="Logo" style="height: 50px; margin-right: 8px; width: 50px;" src="https://drive.google.com/uc?export=view&id=1VxBysUQV0835JiijO4hs24M9A0rZ_Q-d">
-                <img alt="Heurekka" style="height: 30px; margin-right: 8px;" src="https://drive.google.com/uc?export=view&id=1REJbJrhQZakh4UD3gypU8OPa-A2RJVZA">
-            </div>
-            <br/>
-            <p style="line-height: 1.2;">Hi ${firstname},</p>
-            <p style="line-height: 1.2;">We've received a request to reset your password.</p>
-            <p style="line-height: 1.5;">If you didn't make the request, just ignore this message. Otherwise, you can reset your password.</p>        
-            <a href=http://localhost:7000/auth_generalAuth/reset_password/${resetPasswordCode}>
-                <button style="font-weight: 500;font-size: 14px;cursor: pointer; background-color: rgba(238, 119, 36, 1); border: none; border-radius: 4px; padding: 12px 18px 12px 18px; color: white;">
-                    Reset your password
-                </button>
-            </a>
-            <br/>
-            <br/>
-            <br/>
-            <br/>
-            <p style="line-height: 1.5">If you did not make this request, please ignore this email. <br /><br />Best regards, <br />Kapacity Management Team.</p>
-        </div>`
-    })
-
-    console.log("Email sent:", info.response)
-  } catch (error) {
-    console.error("Error sending email:", error)
-    return { msg: "Error sending email", error }
-  }
-}
-
-
-// Password Reset Email (Organization)
-const sendPasswordResetOrg = async (email, company_name, resetPasswordCode) => {
-    try {
-        const info = await transport.sendMail({
-            from: `"Global Kapacity"  <${process.env.MAIL_USER}>`,
-            to: email,
-            subject: "Reset your password",
-            html: `<div>
-            <div style="display: flex; align-items: center;">
-                <img alt="Logo" style="height: 50px; margin-right: 8px; width: 50px;" src="https://drive.google.com/uc?export=view&id=1VxBysUQV0835JiijO4hs24M9A0rZ_Q-d">
-                <img alt="Heurekka" style="height: 30px; margin-right: 8px;" src="https://drive.google.com/uc?export=view&id=1REJbJrhQZakh4UD3gypU8OPa-A2RJVZA">
-            </div>
-            <br/>
-            <p style="line-height: 1.2;">Hi ${company_name},</p>
-            <p style="line-height: 1.2;">We've received a request to reset your password.</p>
-            <p style="line-height: 1.5;">If you didn't make the request, just ignore this message. Otherwise, you can reset your password.</p>        
-            <a href=http://localhost:7000/auth_generalAuth/reset_password/${resetPasswordCode}>
-                <button style="font-weight: 500;font-size: 14px;cursor: pointer; background-color: rgba(238, 119, 36, 1); border: none; border-radius: 4px; padding: 12px 18px 12px 18px; color: white;">
-                    Reset your password
-                </button>
-            </a>
-            <br/>
-            <br/>
-            <br/>
-            <br/>
-            <p style="line-height: 1.5">If you did not make this request, please ignore this email. <br /><br />Best regards, <br />Kapacity Management Team.</p>
-        </div>`
-    })
-
-    console.log("Email sent:", info.response)
-  } catch (error) {
-    console.error("Error sending email:", error)
-    return { msg: "Error sending email", error }
-  }
-}
-
-
-// Password Reset Email (Admin) - Gmail-friendly
-const sendPasswordResetAdmin = async (email, firstname, resetPasswordCode) => {
-    try {
-        const mailOptions = {
-            from: `"Global Kapacity"  <${process.env.MAIL_USER}>`, // full email address
-            to: email,
-            subject: "Admin Reset Password",
-            html: `
-                <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-                    <h3>Hi ${firstname},</h3>
-                    <p>We've received a request to reset your password.</p>
-                    <p>If you didn't make the request, ignore this email. Otherwise, click the button below:</p>
-                    <a href="http://localhost:7000/admin_auth/reset_password/${resetPasswordCode}" style="text-decoration: none;">
-                        <span style="display: inline-block; background-color: #EE7724; color: white; padding: 12px 18px; border-radius: 4px; font-weight: 500;">
-                            Reset Password
-                        </span>
-                    </a>
-                    <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                    <p>http://localhost:7000/admin_auth/reset_password/${resetPasswordCode}</p>
-                    <hr>
-                    <p>Best regards,<br>Team Cart</p>
-                </div>
-            `,
-            text: `Hi ${firstname},\n\nWe've received a request to reset your password.\n\nIf you didn't make the request, ignore this email. Otherwise, visit this link:\nhttp://localhost:7000/admin_auth/reset_password/${resetPasswordCode}\n\nBest regards,\nKapacity Management Team`
-        }
-
-        const info = await transport.sendMail(mailOptions)
-        console.log("Email sent:", info.response);
-        return { msg: "Email sent successfully", info }
-    } catch (error) {
-        console.error("Error sending email:", error)
-        return { msg: "Error sending email", error }
-    }
-}
-
-
-// Confirmation of admin account created
-const sendAdminAccountMail = async (email, password, firstname, role) => {
-    try {
-        const info = await transport.sendMail({
-            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
-            to: email,
-            subject: `Welcome to Global Kapacity as ${role}`,
-            html: `
-                <h2>Hi ${firstname},</h2>
-                <p>Your ${role} account has been successfully created.</p>
-                <p>Here are your login details:</p>
-                <ul>
-                    <li><strong>Email:</strong> ${email}</li>
-                    <li><strong>Password:</strong> ${password}</li>
-                </ul>
-                <p>Please log in and change your password immediately.</p>
-                <p>Best Regards,<br/>Global Kapacity Management Team</p>
-           `,
-        })
-
-        console.log("Admin Account Creation Email sent:", info.response)
-        return { status: "ok", msg: "Email sent" }
-    } catch (error) {
-        console.error("Error sending admin account creation email:", error)
-        return { status: "error", msg: "Failed to send email", error }
-    }
-}
-
-
-// KIP Application Approved
-const sendKipApprovalMail = async (email, organization_name) => {
-    try {
-        const info = await transport.sendMail({
-            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
-            to: email,
-            subject: `Your KIP Application Has Been Approved 🎉`,
+            subject: "Verify Your Account",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Application Approved 🎉</h2>
-                    <p>Dear ${organization_name},</p>
-
-                    <p>We're excited to inform you that your application to join the 
-                    <b>Kapacity Impact Partners (KIP)</b> program has been successfully approved.</p>
-
-                    <p>Welcome aboard! We're looking forward to the positive impact your organization will contribute.</p>
-
+                    <h2>Account Verification</h2>
+                    <p>Your OTP code is: <b>${otp}</b></p>
+                    <p>This code is valid for 10 minutes.</p>
                     <br/>
-                    <p>Best regards,<br/>The KIP Management Team</p>
+                    <p>If you did not request this, please ignore this email.</p>
+                </div>
+            `
+        })
+
+        console.log("OTP Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending OTP Email:", error)
+    }
+}
+
+const sendOtpEmailOrg = async (email, otp) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "Verify Your Organization Account",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Organization Account Verification</h2>
+                    <p>Your OTP code is: <b>${otp}</b></p>
+                    <p>This code is valid for 10 minutes.</p>
+                    <br/>
+                    <p>If you did not request this, please ignore this email.</p>
+                </div>
+            `
+        })
+
+        console.log("Org OTP Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Org OTP Email:", error)
+    }
+}
+
+
+// ===============================
+// PASSWORD RESET
+// ===============================
+const sendPasswordReset = async (email, link) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "Reset Your Password",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Password Reset Request</h2>
+                    <p>Click the link below to reset your password:</p>
+                    <a href="${link}" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+                    <p>This link is valid for 10 minutes.</p>
+                    <br/>
+                    <p>If you did not request this, please ignore this email.</p>
+                </div>
+            `
+        })
+
+        console.log("Password Reset Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Password Reset Email:", error)
+    }
+}
+
+const sendPasswordResetOrg = async (email, link) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "Reset Organization Password",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Password Reset Request</h2>
+                    <p>Click the link below to reset your organization's password:</p>
+                    <a href="${link}" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+                    <p>This link is valid for 10 minutes.</p>
+                    <br/>
+                    <p>If you did not request this, please ignore this email.</p>
+                </div>
+            `
+        })
+
+        console.log("Org Password Reset Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Org Password Reset Email:", error)
+    }
+}
+
+const sendPasswordResetAdmin = async (email, link) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "Reset Admin Password",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Admin Password Reset Request</h2>
+                    <p>Click the link below to reset your admin password:</p>
+                    <a href="${link}" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+                    <p>This link is valid for 10 minutes.</p>
+                    <br/>
+                    <p>If you did not request this, please ignore this email.</p>
+                </div>
+            `
+        })
+
+        console.log("Admin Password Reset Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Admin Password Reset Email:", error)
+    }
+}
+
+
+// ===============================
+// ADMIN ACCOUNT CREATION
+// ===============================
+const sendAdminAccountMail = async (email, password) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "Admin Account Created",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Welcome to Global Kapacity Admin</h2>
+                    <p>Your admin account has been created successfully.</p>
+                    <p><b>Email:</b> ${email}</p>
+                    <p><b>Password:</b> ${password}</p>
+                    <br/>
+                    <p>Please login and change your password immediately.</p>
+                </div>
+            `
+        })
+
+        console.log("Admin Account Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Admin Account Email:", error)
+    }
+}
+
+
+// ===============================
+// KIP APPLICATION EMAILS
+// ===============================
+const sendKipApprovalMail = async (email, firstname) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: "KIP Application Approved! 🎉",
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Congratulations! 🎉</h2>
+                    <p>Dear ${firstname},</p>
+                    <p>We are pleased to inform you that your application to become a Kapacity Impact Partner (KIP) has been approved.</p>
+                    <p>You can now access your KIP dashboard and start making an impact.</p>
+                    <br/>
+                    <p>Welcome to the team!</p>
                 </div>
             `
         })
 
         console.log("KIP Approval Email Sent:", info.response)
-
     } catch (error) {
-        console.error("Error sending KIP approval email:", error)
+        console.error("Error sending KIP Approval Email:", error)
     }
 }
 
-
-// KIP Application Rejected
-const sendKipRejectionMail = async (email, organization_name, reason) => {
+const sendKipRejectionMail = async (email, firstname) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Update on Your KIP Application`,
+            subject: "Update on Your KIP Application",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
                     <h2>Application Update</h2>
-                    <p>Dear ${organization_name},</p>
-
-                    <p>Thank you for taking the time to apply for the 
-                    <b>Kapacity Impact Partners (KIP)</b> program.</p>
-
-                    <p>After reviewing your submission, we're unable to approve your application at this moment.</p>
-
-                    ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
-
-                    <p>You may reapply in the future once the required conditions are met.</p>
-
+                    <p>Dear ${firstname},</p>
+                    <p>Thank you for your interest in becoming a Kapacity Impact Partner.</p>
+                    <p>After careful review, we regret to inform you that we cannot proceed with your application at this time.</p>
                     <br/>
-                    <p>Best regards,<br/>The KIP Management Team</p>
+                    <p>We encourage you to apply again in the future.</p>
                 </div>
             `
         })
 
         console.log("KIP Rejection Email Sent:", info.response)
-
     } catch (error) {
-        console.error("Error sending KIP rejection email:", error)
+        console.error("Error sending KIP Rejection Email:", error)
     }
 }
 
 
-
-// Job Listing Approved
-const sendJobApprovalMail = async (email, company_name, title) => {
+// ===============================
+// JOB LISTING EMAILS
+// ===============================
+const sendJobApprovalMail = async (email, company_name, job_title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Job Listing Has Been Approved ✔️`,
+            subject: "Job Listing Approved ✅",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Job Listing Approved ✔️</h2>
+                    <h2>Job Listing Approved</h2>
                     <p>Dear ${company_name},</p>
-
-                    <p>Your job listing titled <b>${title}</b> has been reviewed and 
-                    <b>approved</b> by our platform administrators.</p>
-
-                    <p>The listing is now live and visible to qualified candidates across the platform.</p>
-
+                    <p>Your job listing for <b>${job_title}</b> has been approved and is now live on our platform.</p>
                     <br/>
-                    <p>Best regards,<br/>The Job Review Team</p>
+                    <p>Thank you for using Global Kapacity.</p>
                 </div>
             `
         })
 
         console.log("Job Approval Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Job Approval Email:", error)
     }
 }
 
-
-
-// Job Listing Rejected
-const sendJobRejectionMail = async (email, company_name, title, reason) => {
+const sendJobRejectionMail = async (email, company_name, job_title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Job Listing Could Not Be Approved`,
+            subject: "Job Listing Rejected ❌",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Job Listing Rejected ❌</h2>
+                    <h2>Job Listing Update</h2>
                     <p>Dear ${company_name},</p>
-
-                    <p>Your job listing titled <b>${title}</b> has been reviewed, 
-                    but cannot be approved at this time.</p>
-
-                    ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
-
-                    <p>You may update the job posting and resubmit it for review again.</p>
-
-                    <br/>
-                    <p>Best regards,<br/>The Job Review Team</p>
+                    <p>Your job listing for <b>${job_title}</b> has been rejected as it does not meet our guidelines.</p>
+                    <p>Please review our policies and try again.</p>
                 </div>
             `
         })
 
         console.log("Job Rejection Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Job Rejection Email:", error)
     }
 }
 
-
-
-// Job Listing Hidden (taken down after complaints or suspicious observations)
-const sendJobHiddenMail = async (email, company_name, title) => {
+const sendJobHiddenMail = async (email, company_name, job_title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Job Listing Has Been Temporarily Taken Down`,
+            subject: "Job Listing Hidden ⚠️",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Job Listing Hidden ⚠️</h2>
+                    <h2>Job Listing Hidden</h2>
                     <p>Dear ${company_name},</p>
-
-                    <p>Your job listing titled <b>${title}</b> has been hidden from public view.</p>
-
-                    <p>This action was taken due to reports or activity that require further review.</p>
-
-                    <p>You may update or clarify the posting if needed and request a re-review.</p>
-
-                    <br/>
-                    <p>Best regards,<br/>The Job Safety Team</p>
+                    <p>Your job listing for <b>${job_title}</b> has been hidden by an administrator.</p>
+                    <p>If you believe this is a mistake, please contact support.</p>
                 </div>
             `
         })
 
         console.log("Job Hidden Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Job Hidden Email:", error)
     }
 }
 
 
-// Training Listing Approved
-const trainingApprovalMail = async (email, name, title, posted_by_model) => {
-    // Determine message depending on who posted
-    const visibilityMessage = posted_by_model === "Organization"
-        ? "Your training is now live and visible to learners on the platform."
-        : "Your training has been approved by the admin and is awaiting confirmation from your selected Impact Partner before going live."
-
+// ===============================
+// TRAINING EMAILS
+// ===============================
+const trainingApprovalMail = async (email, firstname, title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Training Has Been Approved ✔️`,
+            subject: "Training Approved ✅",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Training Approved ✔️</h2>
-                    <p>Dear ${name},</p>
-
-                    <p>Your training titled <b>${title}</b> has been reviewed and <b>approved</b> by our platform administrators.</p>
-
-                    <p>${visibilityMessage}</p>
-
+                    <h2>Training Approved</h2>
+                    <p>Dear ${firstname},</p>
+                    <p>Your training titled <b>${title}</b> has been approved.</p>
                     <br/>
                     <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
@@ -417,165 +317,124 @@ const trainingApprovalMail = async (email, name, title, posted_by_model) => {
     }
 }
 
-
-//Training Listing Rejected
-const trainingRejectionMail = async (email, posted_by, title, reason) => {
-    const name = formatRecipientName(posted_by)
-
+const trainingRejectionMail = async (email, firstname, title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Training Could Not Be Approved`,
+            subject: "Training Rejected ❌",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Training Rejected ❌</h2>
-                    <p>Dear ${name},</p>
-
-                    <p>Your training titled <b>${title}</b> has been reviewed, 
-                    but cannot be approved at this time.</p>
-
-                    ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
-
-                    <p>You may update the training details and submit it again for review.</p>
-
+                    <h2>Training Rejected</h2>
+                    <p>Dear ${firstname},</p>
+                    <p>Your training titled <b>${title}</b> has been rejected.</p>
                     <br/>
-                    <p>Best regards,<br/>Global Kapacity Review Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
 
         console.log("Training Rejection Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Training Rejection Email:", error)
     }
 }
 
-
-// Training Listing Hidden (taken down after complaints or suspicious observations)
-const trainingHiddenMail = async (email, posted_by, title) => {
-    const name = formatRecipientName(posted_by)
-
+const trainingHiddenMail = async (email, firstname, title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Training Has Been Temporarily Hidden`,
+            subject: "Training Hidden ⚠️",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Training Hidden ⚠️</h2>
-                    <p>Dear ${name},</p>
-
-                    <p>Your training titled <b>${title}</b> has been hidden from public view.</p>
-
-                    <p>This action was taken because further review is required.</p>
-
-                    <p>You may update the training if needed and request another review.</p>
-
+                    <h2>Training Hidden</h2>
+                    <p>Dear ${firstname},</p>
+                    <p>Your training titled <b>${title}</b> has been hidden.</p>
                     <br/>
-                    <p>Best regards,<br/>Global Kapacity Safety Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
 
         console.log("Training Hidden Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Training Hidden Email:", error)
     }
 }
 
+// Helper to format recipient name
+const formatRecipientName = (user) => {
+    if (user.account_type === 'organization') {
+        return user.company_name
+    }
+    return `${user.firstname} ${user.lastname}`
+}
 
-// Approved Training sent to selected Impact Partner for verification
-const trainingToKipMail = async (email, firstname, title) => {
+const trainingToKipMail = async (email, kipName, trainingTitle, user) => {
     try {
+        const recipientName = formatRecipientName(user)
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Training Has Been Sent to the Selected Impact Partner`,
+            subject: `New Training Assigned: ${trainingTitle}`,
             html: `
-                <div style="font-family: Arial; padding: 20px;">
-                    <h2>Training Forwarded to Impact Partner ✔️</h2>
-                    <p>Dear ${firstname},</p>
-
-                    <p>Your training titled <b>${title}</b> has been approved 
-                    by the admin and forwarded to your selected Impact Partner for review.</p>
-
-                    <p>The Impact Partner will either accept to manage this training 
-                    or decline it. You will be notified once we receive their response.</p>
-
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>New Training Assignment</h2>
+                    <p>Dear ${kipName},</p>
+                    <p>You have been selected as the Impact Partner for a new training:</p>
+                    <p><b>Title:</b> ${trainingTitle}</p>
+                    <p><b>Submitted By:</b> ${recipientName}</p>
+                    <p>Please log in to your dashboard to review and manage this training.</p>
                     <br/>
-                    <p>Warm regards,<br/>Kapacity Admin Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
 
-        console.log("Training To Selected Impact Partner Email sent:", info.response)
-        return { status: "ok", msg: "Email sent" }
-    } catch (err) {
-        console.error("Error sending user training->KIP email:", err)
+        console.log("Training To KIP Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Training To KIP Email:", error)
     }
 }
 
-
-// Training Listing sent for selected partner response
-const trainingNotifyKipMail = async (email, organization_name, title) => {
+const trainingNotifyKipMail = async (email, kipName, trainingTitle) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `You Have Been Selected as Impact Partner`,
+            subject: `Training Update: ${trainingTitle}`,
             html: `
-                <div style="font-family: Arial; padding: 20px;">
-                    <h2>Impact Partner Assignment</h2>
-                    <p>Dear ${organization_name},</p>
-
-                    <p>You have been selected as the Impact Partner for the training titled 
-                    <b>${title}</b>.</p>
-
-                    <p>Please review the training details and let us know if you 
-                    <b>accept</b> or <b>decline</b> managing this training.</p>
-
-                    <p>Your decision will be forwarded to the training owner and the admin.</p>
-
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Training Update</h2>
+                    <p>Dear ${kipName},</p>
+                    <p>There is an update regarding the training: <b>${trainingTitle}</b>.</p>
+                    <p>Please check your dashboard for details.</p>
                     <br/>
-                    <p>Warm regards,<br/>Kapacity Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
-    } catch (err) {
-        console.error("Error sending KIP notification email:", err)
+
+        console.log("Training Notify KIP Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Training Notify KIP Email:", error)
     }
 }
 
-
-// ===============================
-// TRAINING — KIP ACCEPTED
-// ===============================
 const kipAcceptsTrainingMail = async (email, firstname, title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Training Has Been Approved by the Impact Partner ✔️`,
+            subject: "KIP Accepted Your Training ✅",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-
-                    <h2>Training Accepted ✔️</h2>
-
+                    <h2>Training Accepted</h2>
                     <p>Dear ${firstname},</p>
-
-                    <p>Your training titled <b>${title}</b> has been reviewed and 
-                    accepted by the selected Impact Partner.</p>
-
-                    <p>The training will now proceed to the next stage of preparation and coordination.</p>
-
+                    <p>The Impact Partner has accepted to manage your training: <b>${title}</b>.</p>
                     <br/>
-                    <p>We will keep you informed all through the process.</p>
-                    <br/>
-
-                    <p>Best regards,<br/>Kapacity Training Review Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
@@ -586,38 +445,21 @@ const kipAcceptsTrainingMail = async (email, firstname, title) => {
     }
 }
 
-
-
-
-// ===============================
-// TRAINING — KIP REJECTED
-// ===============================
-const kipRejectsTrainingMail = async (email, firstname, title, kip_rejection_reason) => {
+const kipRejectsTrainingMail = async (email, firstname, title, reason) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Selected Impact Partner Declined the Training ❌`,
+            subject: "KIP Declined Your Training ❌",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-
-                    <h2>Training Declined ❌</h2>
-
+                    <h2>Training Declined</h2>
                     <p>Dear ${firstname},</p>
-
-                    <p>The Impact Partner assigned to your training titled 
-                    <b>${title}</b> has declined to manage it.</p>
-
-                    <p><b>Reason:</b> ${kip_rejection_reason}</p>
-
-                    <p>Please log in to your dashboard to select another Impact Partner 
-                    so the training can proceed.</p>
-
+                    <p>The Impact Partner has declined to manage your training: <b>${title}</b>.</p>
+                    <p><b>Reason:</b> ${reason}</p>
+                    <p>Please select another Impact Partner.</p>
                     <br/>
-                    <p>If you need assistance, do not hesitate to reach out to support.</p>
-
-                    <br/>
-                    <p>Best regards,<br/>Kapacity Training Review Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
@@ -629,27 +471,20 @@ const kipRejectsTrainingMail = async (email, firstname, title, kip_rejection_rea
 }
 
 
-// Scholarship Listing Approved
-const scholarshipApprovalMail = async (email, name, title, posted_by_model) => {
-    // Determine message depending on who posted
-    const visibilityMessage = posted_by_model === "Organization"
-        ? "Your scholarship is now live and visible to learners on the platform."
-        : "Your scholarship has been approved by the admin and is awaiting confirmation from your selected Impact Partner before going live."
-
+// ===============================
+// SCHOLARSHIP EMAILS
+// ===============================
+const scholarshipApprovalMail = async (email, firstname, title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Scholarship Has Been Approved ✔️`,
+            subject: "Scholarship Approved ✅",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Scholarship Approved ✔️</h2>
-                    <p>Dear ${name},</p>
-
-                    <p>Your scholarship titled <b>${title}</b> has been reviewed and <b>approved</b> by our platform administrators.</p>
-
-                    <p>${visibilityMessage}</p>
-
+                    <h2>Scholarship Approved</h2>
+                    <p>Dear ${firstname},</p>
+                    <p>Your scholarship titled <b>${title}</b> has been approved.</p>
                     <br/>
                     <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
@@ -662,135 +497,100 @@ const scholarshipApprovalMail = async (email, name, title, posted_by_model) => {
     }
 }
 
-
-//Scholarship Listing Rejected
-const scholarshipRejectionMail = async (email, posted_by, title, reason) => {
-    const name = formatRecipientName(posted_by)
-
+const scholarshipRejectionMail = async (email, firstname, title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Scholarship Could Not Be Approved`,
+            subject: "Scholarship Rejected ❌",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Scholarship Rejected ❌</h2>
-                    <p>Dear ${name},</p>
-
-                    <p>Your scholarship titled <b>${title}</b> has been reviewed, 
-                    but cannot be approved at this time.</p>
-
-                    ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
-
-                    <p>You may update the scholarship details and submit it again for review.</p>
-
+                    <h2>Scholarship Rejected</h2>
+                    <p>Dear ${firstname},</p>
+                    <p>Your scholarship titled <b>${title}</b> has been rejected.</p>
                     <br/>
-                    <p>Best regards,<br/>Global Kapacity Review Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
 
         console.log("Scholarship Rejection Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Scholarship Rejection Email:", error)
     }
 }
 
-
-// Scholarship Listing Hidden (taken down after complaints or suspicious observations)
-const scholarshipHiddenMail = async (email, posted_by, title) => {
-    const name = formatRecipientName(posted_by)
-
+const scholarshipHiddenMail = async (email, firstname, title) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Scholarship Has Been Temporarily Hidden`,
+            subject: "Scholarship Hidden ⚠️",
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Scholarship Hidden ⚠️</h2>
-                    <p>Dear ${name},</p>
-
-                    <p>Your scholarship titled <b>${title}</b> has been hidden from public view.</p>
-
-                    <p>This action was taken because further review is required.</p>
-
-                    <p>You may update the scholarship if needed and request another review.</p>
-
+                    <h2>Scholarship Hidden</h2>
+                    <p>Dear ${firstname},</p>
+                    <p>Your scholarship titled <b>${title}</b> has been hidden.</p>
                     <br/>
-                    <p>Best regards,<br/>Global Kapacity Safety Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
 
         console.log("Scholarship Hidden Email Sent:", info.response)
-
     } catch (error) {
         console.error("Error sending Scholarship Hidden Email:", error)
     }
 }
 
-
-// Approved Scholarship sent to selected Impact Partner for verification
-const scholarshipToKipMail = async (email, firstname, title) => {
+const scholarshipToKipMail = async (email, kipName, scholarshipTitle, user) => {
     try {
+        const recipientName = formatRecipientName(user)
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `Your Scholarship Has Been Sent to the Selected Impact Partner`,
+            subject: `New Scholarship Assigned: ${scholarshipTitle}`,
             html: `
-                <div style="font-family: Arial; padding: 20px;">
-                    <h2>Scholarship Forwarded to Impact Partner ✔️</h2>
-                    <p>Dear ${firstname},</p>
-
-                    <p>Your scholarship titled <b>${title}</b> has been approved 
-                    by the admin and forwarded to your selected Impact Partner for review.</p>
-
-                    <p>The Impact Partner will either accept to manage this scholarship 
-                    or decline it. You will be notified once we receive their response.</p>
-
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>New Scholarship Assignment</h2>
+                    <p>Dear ${kipName},</p>
+                    <p>You have been selected as the Impact Partner for a new scholarship:</p>
+                    <p><b>Title:</b> ${scholarshipTitle}</p>
+                    <p><b>Submitted By:</b> ${recipientName}</p>
+                    <p>Please log in to your dashboard to review and manage this scholarship.</p>
                     <br/>
-                    <p>Warm regards,<br/>Kapacity Admin Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
 
-        console.log("Scholarship To Selected Impact Partner Email sent:", info.response)
-        return { status: "ok", msg: "Email sent" }
-    } catch (err) {
-        console.error("Error sending user scholarship->KIP email:", err)
+        console.log("Scholarship To KIP Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Scholarship To KIP Email:", error)
     }
 }
 
-
-// Scholarship Listing sent for selected partner response
-const scholarshipNotifyKipMail = async (email, organization_name, title) => {
+const scholarshipNotifyKipMail = async (email, kipName, scholarshipTitle) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: `You Have Been Selected as Impact Partner`,
+            subject: `Scholarship Update: ${scholarshipTitle}`,
             html: `
-                <div style="font-family: Arial; padding: 20px;">
-                    <h2>Impact Partner Assignment</h2>
-                    <p>Dear ${organization_name},</p>
-
-                    <p>You have been selected as the Impact Partner for the scholarship titled 
-                    <b>${title}</b>.</p>
-
-                    <p>Please review the scholarship details and let us know if you 
-                    <b>accept</b> or <b>decline</b> managing this scholarship.</p>
-
-                    <p>Your decision will be forwarded to the scholarship owner and the admin.</p>
-
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Scholarship Update</h2>
+                    <p>Dear ${kipName},</p>
+                    <p>There is an update regarding the scholarship: <b>${scholarshipTitle}</b>.</p>
+                    <p>Please check your dashboard for details.</p>
                     <br/>
-                    <p>Warm regards,<br/>Kapacity Team</p>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
                 </div>
             `
         })
-    } catch (err) {
-        console.error("Error sending KIP notification email:", err)
+
+        console.log("Scholarship Notify KIP Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Scholarship Notify KIP Email:", error)
     }
 }
 
@@ -878,18 +678,18 @@ const kipRejectsScholarshipMail = async (email, firstname, title, kip_rejection_
 const sendPaymentSuccessMail = async (email, firstname, amount, reference, type = 'general') => {
     try {
         let title = 'Payment Successful'
-        if (type === 'Subscription') title = 'Subscription Payment Successful'
+        if (type === 'Registration') title = 'Registration Payment Successful'
         /*if (type === 'order') title = 'Food Order Payment Successful'
         if (type === 'event') title = 'Event Hall Booking Payment Successful'*/
 
         const info = await transport.sendMail({
-            from: `"Global Kapacity" <${process.env.EMAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: 'Payment Confirmation - Thank you for your payment',
+            subject: `${title} 🎉`,
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7;">
                     <div style="max-width: 600px; margin: auto; background: white; border-radius: 8px; padding: 20px;">
-                        <h2 style="color: #2c3e50;">Payment Successful 🎉</h2>
+                        <h2 style="color: #2c3e50;">${title} 🎉</h2>
                         <p>Dear <strong>${firstname}</strong>,</p>
                         <p>We have received your payment of <strong>₦${amount}</strong>.</p>
                         <p>Your payment reference is <strong>${reference}</strong>.</p>
@@ -920,13 +720,13 @@ const sendPaymentSuccessMailOrg = async (email, company_name, amount, reference,
         if (type === 'event') title = 'Event Hall Booking Payment Successful'*/
 
         const info = await transport.sendMail({
-            from: `"Global Kapacity" <${process.env.EMAIL_USER}>`,
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
-            subject: 'Payment Confirmation - Thank you for your payment',
+            subject: `${title} 🎉`,
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7;">
                     <div style="max-width: 600px; margin: auto; background: white; border-radius: 8px; padding: 20px;">
-                        <h2 style="color: #2c3e50;">Payment Successful 🎉</h2>
+                        <h2 style="color: #2c3e50;">${title} 🎉</h2>
                         <p>Dear <strong>${company_name}</strong>,</p>
                         <p>We have received your payment of <strong>₦${amount}</strong>.</p>
                         <p>Your payment reference is <strong>${reference}</strong>.</p>
@@ -948,31 +748,41 @@ const sendPaymentSuccessMailOrg = async (email, company_name, amount, reference,
 }
 
 
+// Subscription Success Email
+const sendSubscriptionSuccessEmail = async (email, name, plan, amount, billing_cycle) => {
+    try {
+        const info = await transport.sendMail({
+            from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `Subscription Successful! 🎉`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Subscription Confirmed 🎉</h2>
+                    <p>Dear ${name},</p>
 
+                    <p>Thank you for subscribing to our <b>${billing_cycle}</b> premium plan.</p>
 
+                    <p><b>Plan Details:</b></p>
+                    <ul>
+                        <li><b>Plan:</b> ${plan}</li>
+                        <li><b>Billing Cycle:</b> ${billing_cycle}</li>
+                        <li><b>Amount:</b> ${amount}</li>
+                    </ul>
 
-// const sendAccountVerification = async (email, fullname) => {
-//   try {
-//     const info = await transport
-//       .sendMail({
-//         from: `foodkart.dev@gmail.com <${process.env.MAIL_USER}>`,
-//         to: email,
-//         subject: "Account Verification",
-//         html: `<p style="line-height: 1.5">
-//         Congratulations ${fullname}, you account has been verified.
-//         You can now enjoy the perks that comes with this status.
-//         Best regards,<br />
-//         Team FoodKart.
-//         </p>
-//         </div>`,
-//       });
+                    <p>Your premium features are now active.</p>
 
-//     console.log("Email sent:", info.response);
-//   } catch (error) {
-//     console.error("Error sending email:", error);
-//     return { msg: "Error sending email", error };
-//   }
-// }
+                    <br/>
+                    <p>Best regards,<br/>Global Kapacity Team</p>
+                </div>
+            `
+        })
+
+        console.log("Subscription Email Sent:", info.response)
+    } catch (error) {
+        console.error("Error sending Subscription Email:", error)
+    }
+}
+
 
 module.exports = {
     sendOtpEmail,
@@ -991,7 +801,7 @@ module.exports = {
     trainingHiddenMail,
     trainingToKipMail,
     trainingNotifyKipMail,
-    kipAcceptsTrainingMail, 
+    kipAcceptsTrainingMail,
     kipRejectsTrainingMail,
     scholarshipApprovalMail,
     scholarshipRejectionMail,
@@ -1001,5 +811,6 @@ module.exports = {
     kipAcceptsScholarshipMail,
     kipRejectsScholarshipMail,
     sendPaymentSuccessMail,
-    sendPaymentSuccessMailOrg
+    sendPaymentSuccessMailOrg,
+    sendSubscriptionSuccessEmail
 }

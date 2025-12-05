@@ -38,7 +38,7 @@ router.post('/view', authToken, async (req, res) => {
 
 
 // MARK a bug report as resolved
-router.patch('/resolved', authToken, async (req, res) => {
+router.post('/mark', authToken, async (req, res) => {
     try {
         const { id } = req.body
         if(!id) {
@@ -57,5 +57,36 @@ router.patch('/resolved', authToken, async (req, res) => {
         return res.status(500).send({ status: 'error', msg: 'Server error', error: error.message });
     }
 })
+
+
+// List of resolved reports
+router.post("/resolved", authToken, async (req, res) => {
+    try {
+        const resolved = await BugReport.find({ resolved: true }).sort({ createdAt: -1 })
+        if (!resolved.length) {
+            return res.status(200).send({ status: 'ok', msg: 'No resolved reports yet', count: 0 })
+        }
+
+        res.status(200).send({ status: "ok", msg: "success", count: resolved.length, resolved })
+    } catch (error) {
+        res.status(500).send({ status: "error", msg: "Server error", error: error.message })
+    }
+})
+
+
+// List of resolved reports
+router.post("/unresolved", authToken, async (req, res) => {
+    try {
+        const unresolved = await BugReport.find({ resolved: false }).sort({ createdAt: -1 })
+        if (!unresolved.length) {
+            return res.status(200).send({ status: 'ok', msg: 'No unresolved reports', count: 0 })
+        }
+
+        res.status(200).send({ status: "ok", msg: "success", count: unresolved.length, unresolved })
+    } catch (error) {
+        res.status(500).send({ status: "error", msg: "Server error", error: error.message })
+    }
+})
+
 
 module.exports = router

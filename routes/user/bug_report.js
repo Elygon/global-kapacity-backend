@@ -16,7 +16,12 @@ router.post('/report', authToken, async (req, res) => {
     }
 
     try {
-        const report = new BugReport({ email, phone, message });
+        const report = new BugReport({
+            user_id: req.user._id,
+            email,
+            phone_no: phone,
+            message
+        });
         await report.save()
 
         return res.status(200).send({ status: 'ok', msg: 'success', report });

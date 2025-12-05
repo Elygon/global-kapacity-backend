@@ -14,7 +14,7 @@ const Subscription = require('../../models/subscription')
 const Event = require('../../models/event')
 const Service = require('../../models/service');*/
 const { createPayment } = require('../../controllers/paystack') // your paystack file
-const { sendPaymentSuccessMailOrg } = require('../../utils/nodemailer')
+const { sendPaymentSuccessMailOrg, sendSubscriptionSuccessEmail } = require('../../utils/nodemailer')
 
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_TEST_SECRET_KEY
@@ -30,7 +30,7 @@ function verifyPaystackSignature(signature, requestBody, secretKey) {
 // Initialize payment
 router.post('/initialize', async (req, res) => {
     try {
-        const { email, amount, company_name, phone_no, payment_method, type, 
+        const { email, amount, company_name, phone_no, payment_method, type,
             description, subscriptionId/*, orderId, eventId, serviceId*/ } = req.body
 
         // Create a unique reference
@@ -83,7 +83,7 @@ router.post('/confirm', async (req, res) => {
 
         if (event.event === 'charge.success') {
             const payment = await Payment.findOneAndUpdate({ reference }, { status: 'Success' }, { new: true })
-            .populate(['subscription'/*, 'order', 'event', 'service'*/])
+                .populate(['subscription'/*, 'order', 'event', 'service'*/])
 
             if (!payment) {
                 return console.log('Payment not found:', reference)
@@ -91,14 +91,49 @@ router.post('/confirm', async (req, res) => {
 
             // Handle payment depending on its type
             if (payment.subscription) {
-                await Subscription.findByIdAndUpdate(payment.subscription._id, { payment_status: 'Paid' })
-            
-                // Send payment confirmation email
-                await sendPaymentSuccessMailOrg(payment.email, payment.company_name, payment.amount, payment.reference, 'Subscription')
-                console.log('Subscription payment confirmed')
-           }
+                // Update Subscription status
+                const subscription = await Subscription.findByIdAndUpdate(
+                    payment.subscription._id,
+                    { payment_status: 'Paid', is_active: true },
+                    { new: true }
+                )
 
-            /*else if (payment.order) {
+                // Update Organization Premium Status
+                const org = await Organization.findByIdAndUpdate(
+                    payment.subscription.organization_id,
+                    {
+                        is_premium_org: true,
+                        sub_plan: subscription.plan,
+                        expiry_date: subscription.end_date,
+                        subscription: {
+                            plan_id: subscription._id,
+                            billing_cycle: subscription.plan,
+                            start_date: subscription.start_date,
+                            end_date: subscription.end_date,
+                            status: "active"
+                        }
+                    },
+                    { new: true }
+                )
+
+                // Send subscription success email
+                await sendSubscriptionSuccessEmail(
+                    payment.email,
+                    payment.company_name,
+                    subscription.plan,
+                    payment.amount,
+                    subscription.plan
+                )
+
+                console.log('Subscription payment confirmed and organization updated')
+
+            }
+
+            /*
+            // Send payment confirmation email
+                await sendPaymentSuccessMailOrg(payment.email, payment.company_name, payment.amount, payment.reference, 'Subscription')
+            
+            else if (payment.order) {
                 await Order.findByIdAndUpdate(payment.order._id, { payment_status: 'Paid' })
                 
                 // Send payment confirmation email
@@ -149,7 +184,7 @@ router.post('/view', authToken, async (req, res) => {
     } catch (error) {
         console.error('Error fetching payments:', error.message);
         return res.status(500).send({ status: 'error', msg: 'Failed to fetch payments' })
-   }
+    }
 })
 
 

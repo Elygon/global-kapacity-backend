@@ -107,6 +107,11 @@ app.use('/admin_bug_report', require('./routes/admin/bug_report'))
 app.use('/admin_subscription', require('./routes/admin/subscription'))
 
 
+
+// dev tools routes
+app.use('/dev_tools', require('./routes/dev/devTools'))
+
+
 const port = process.env.PORT || 7000
 app.listen(port , ()=>{
     console.log(`server listening at port ${port}`)

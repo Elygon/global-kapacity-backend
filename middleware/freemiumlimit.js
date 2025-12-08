@@ -33,7 +33,8 @@ const preventFreemiumKIP = async (req, res, next) => {
     }
 
     if (!isPremium(account, req.user.role)) {
-        return res.status(403).send({ status: 'error', msg: 'Freemium accounts cannot apply for KIP' })
+        return res.status(403).send({ status: 'error', 
+            msg: 'Freemium accounts cannot apply for Kapacity Impact Partnership' })
     }
 
     next()

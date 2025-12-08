@@ -78,7 +78,7 @@ const sendPasswordReset = async (email, link) => {
                     <h2>Password Reset Request</h2>
                     <p>Click the link below to reset your password:</p>
                     <a href="${link}" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-                    <p>This link is valid for 10 minutes.</p>
+                    <p>This link is valid for 15 minutes.</p>
                     <br/>
                     <p>If you did not request this, please ignore this email.</p>
                 </div>
@@ -102,7 +102,7 @@ const sendPasswordResetOrg = async (email, link) => {
                     <h2>Password Reset Request</h2>
                     <p>Click the link below to reset your organization's password:</p>
                     <a href="${link}" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-                    <p>This link is valid for 10 minutes.</p>
+                    <p>This link is valid for 15 minutes.</p>
                     <br/>
                     <p>If you did not request this, please ignore this email.</p>
                 </div>
@@ -126,7 +126,7 @@ const sendPasswordResetAdmin = async (email, link) => {
                     <h2>Admin Password Reset Request</h2>
                     <p>Click the link below to reset your admin password:</p>
                     <a href="${link}" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-                    <p>This link is valid for 10 minutes.</p>
+                    <p>This link is valid for 15 minutes.</p>
                     <br/>
                     <p>If you did not request this, please ignore this email.</p>
                 </div>
@@ -171,7 +171,7 @@ const sendAdminAccountMail = async (email, password) => {
 // ===============================
 // KIP APPLICATION EMAILS
 // ===============================
-const sendKipApprovalMail = async (email, firstname) => {
+const sendKipApprovalMail = async (email, organization_name) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
@@ -180,7 +180,7 @@ const sendKipApprovalMail = async (email, firstname) => {
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
                     <h2>Congratulations! 🎉</h2>
-                    <p>Dear ${firstname},</p>
+                    <p>Dear ${organization_name},</p>
                     <p>We are pleased to inform you that your application to become a Kapacity Impact Partner (KIP) has been approved.</p>
                     <p>You can now access your KIP dashboard and start making an impact.</p>
                     <br/>
@@ -195,7 +195,7 @@ const sendKipApprovalMail = async (email, firstname) => {
     }
 }
 
-const sendKipRejectionMail = async (email, firstname) => {
+const sendKipRejectionMail = async (email, organization_name) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
@@ -204,7 +204,7 @@ const sendKipRejectionMail = async (email, firstname) => {
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
                     <h2>Application Update</h2>
-                    <p>Dear ${firstname},</p>
+                    <p>Dear ${organization_name},</p>
                     <p>Thank you for your interest in becoming a Kapacity Impact Partner.</p>
                     <p>After careful review, we regret to inform you that we cannot proceed with your application at this time.</p>
                     <br/>

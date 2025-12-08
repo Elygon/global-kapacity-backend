@@ -7,14 +7,14 @@ const monetaryValueSchema = new mongoose.Schema({
 }, { _id: false })
 
 const scholarshipSchema = new mongoose.Schema({
-    posted_by: {type: mongoose.Schema.Types.ObjectId, refPath: 'posted_by_model', required: true},
+    posted_by: { type: mongoose.Schema.Types.ObjectId, refPath: 'posted_by_model', required: true },
     posted_by_model: { type: String, enum: ['User', 'Organization'] },
-    selected_kip: {type: mongoose.Schema.Types.ObjectId, refPath: 'selected_kip_model', default: null},
+    selected_kip: { type: mongoose.Schema.Types.ObjectId, refPath: 'selected_kip_model', default: null },
     selected_kip_model: { type: String, enum: ['User', 'Organization'] },
 
     // Step 1 (Scholarship Basicss)
     title: String, // scholarship name
-    description: {type: String, maxlength: 100 },
+    description: { type: String, maxlength: 100 },
     field_of_study: {
         type: String,
         enum: [
@@ -26,7 +26,7 @@ const scholarshipSchema = new mongoose.Schema({
     scholarship_type: {
         type: String,
         enum: [
-            'Fully Funded', 'Partially Funded', 'Tuition-Only', 'Stipend / Allowance', 'Research Grant','Travel Grant',
+            'Fully Funded', 'Partially Funded', 'Tuition-Only', 'Stipend / Allowance', 'Research Grant', 'Travel Grant',
             'Short Course Scholarships'
         ]
     },
@@ -42,25 +42,6 @@ const scholarshipSchema = new mongoose.Schema({
             'High School', 'Undergraduate', 'Postgraduate / Masters', 'PhD / Doctoral', 'Vocational / Technical Programs'
         ]
     },
-
-    // Step 2 (Scholarship Eligibility & Benefits)
-    eligibility_criteria: { type: String, maxlength: 150 }, // who can apply for this scholarship
-    requirements: { type: String, maxlength: 150 },
-    benefits: { type: String, maxlength: 200 },
-    no_of_slots: { type: Number, min: 1 }, // number of slots available
-    region: {
-        type: String,
-        enum: [
-            'Study in Africa', 'Study in Europe', 'Study in USA / Canada', 'Study in UK', 'Study in Asia', 'Study in Australia',
-            'Others'
-        ]
-    },
-    scholarship_value: [monetaryValueSchema],
-
-    // Step 3 (Important Dates & Details)
-    open_date: Date, // registration opening date
-    deadline: Date, // registration deadline
-    shortlist_date: Date, // dates for announcing shortlisted candidates
     interview_date: Date,
     winners_announcement_date: Date,
     disbursement_date: Date,
@@ -69,7 +50,7 @@ const scholarshipSchema = new mongoose.Schema({
     // After Scholarship Posting has been submitting
     admin_status: {
         type: String,
-        enum: [ 'submitted', 'rejected', 'approved', 'sent to kip' ],
+        enum: ['submitted', 'rejected', 'approved', 'sent to kip'],
         default: 'submitted'
     },
     admin_rejection_reason: { type: String, default: null },

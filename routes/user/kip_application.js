@@ -12,22 +12,28 @@ const { preventFreemiumKIP } = require("../../middleware/freemiumlimit")
 // ==========================
 router.post("/step_one", authToken, preventFreemiumKIP, async (req, res) => {
     const { organization_name, organization_type, reg_no, aof, // AOF (Area of Focus)
-        email, phone_no, website, countries, location, social_links
+        aof_other, email, phone_no, website, countries, location, social_links
     } = req.body
 
-    if ( !organization_name || !organization_type || !reg_no || !aof || !email || !phone_no || !website || !countries
+    if (!organization_name || !organization_type || !reg_no || !aof || !email || !phone_no || !website || !countries
         || !location || !social_links
     ) {
-        return res.status(400).send({ status: 'error', send: 'All fields are required'})
+        return res.status(400).send({ status: 'error', send: 'All fields are required' })
     }
-    
+
+    // Validate 'Others' in Area of Focus
+    if (aof.includes('Others') && !aof_other) {
+        return res.status(400).send({ status: 'error', msg: 'Please specify your other Area of Focus' })
+    }
+
     try {
         const newApplication = new KIPApplication({
-            userId: req.user._id,
+            user_id: req.user._id,
             organization_name,
             organization_type,
             reg_no,
             aof, // AOF (Area of Focus)
+            aof_other: aof.includes('Others') ? aof_other : undefined,
             email,
             phone_no,
             website,
@@ -50,10 +56,10 @@ router.post("/step_one", authToken, preventFreemiumKIP, async (req, res) => {
 // ==========================
 router.post("/step_two", authToken, preventFreemiumKIP, async (req, res) => {
     const { applicationId, contact_name, role, document, description } = req.body
-    if (!applicationId || !contact_name || !role || !document || !description ) {
+    if (!applicationId || !contact_name || !role || !document || !description) {
         return res.status(404).send({ status: 'error', msg: "All fields are required" })
     }
-    
+
     try {
         const application = await KIPApplication.findById(applicationId)
 
@@ -102,11 +108,11 @@ router.post("/my_application", authToken, async (req, res) => {
 router.post("/cancel", authToken, async (req, res) => {
     const { applicationId, userId } = req.body
     if (!applicationId || !userId) {
-        return res.status(400).send({ status: 'error', msg: 'All fields are required'})
+        return res.status(400).send({ status: 'error', msg: 'All fields are required' })
     }
 
     if (!mongoose.Types.ObjectId.isValid(applicationId)) {
-        return res.status(400).send({ status: 'error', msg: 'Invalid Application ID'})
+        return res.status(400).send({ status: 'error', msg: 'Invalid Application ID' })
     }
 
     try {
@@ -117,7 +123,7 @@ router.post("/cancel", authToken, async (req, res) => {
 
         // Optional: Only allow cancel if status is not already approved/rejected
         if (application.status === 'Approved' || application.status === 'Rejected') {
-            return res.status(400).send({ status: 'error', msg: 'Already been reviewed'})
+            return res.status(400).send({ status: 'error', msg: 'Already been reviewed' })
         }
 
         await KIPApplication.deleteOne({ _id: applicationId })

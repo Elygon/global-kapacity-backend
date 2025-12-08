@@ -10,17 +10,23 @@ const { isPremiumOrg } = require("../../middleware/opportunityPost")
 // STEP 1: POST A JOB
 // ==========================
 router.post("/step_one", authToken, isPremiumOrg, async (req, res) => {
-    const { title, industry, employment_type, work_mode, country, state, salary_range, deadline } = req.body
+    const { title, industry, custom_industry, employment_type, work_mode, country, state, salary_range, deadline } = req.body
 
-    if ( !title || !industry || !employment_type || !work_mode || !country || !state || !salary_range || !deadline ) {
-        return res.status(400).send({ status: 'error', send: 'All fields are required'})
+    if (!title || !industry || !employment_type || !work_mode || !country || !state || !salary_range || !deadline) {
+        return res.status(400).send({ status: 'error', send: 'All fields are required' })
     }
-    
+
+    // Validate Industry
+    if (industry === 'Others' && !custom_industry) {
+        return res.status(400).send({ status: 'error', msg: 'Please specify your industry' })
+    }
+
     try {
         const newJob = new Job({
-            organizationId: req.user._id,
+            posted_by: req.user._id, // Changed from organizationId to posted_by to match model
             title,
             industry,
+            custom_industry: industry === 'Others' ? custom_industry : undefined,
             employment_type,
             work_mode,
             country,
@@ -43,12 +49,12 @@ router.post("/step_one", authToken, isPremiumOrg, async (req, res) => {
 // ==========================
 router.post("/step_two", authToken, isPremiumOrg, async (req, res) => {
     const { jobId, description, responsibilities, requirements, preferred_skills, email } = req.body
-    if (!jobId || !description || !responsibilities || !requirements || !preferred_skills || !email ) {
+    if (!jobId || !description || !responsibilities || !requirements || !preferred_skills || !email) {
         return res.status(404).send({ status: 'error', msg: "All fields are required" })
     }
-    
+
     try {
-        const job = await Job.findById(JobId)
+        const job = await Job.findById(jobId) // Fixed typo JobId -> jobId
 
         if (!job) {
             return res.status(404).send({ status: 'error', msg: "Job not found." })
@@ -101,9 +107,9 @@ router.post('/preview', authToken, isPremiumOrganization, async (req, res) => {
 // =========================================
 router.post('/publish', authToken, isPremiumOrg, async (req, res) => {
     const { jobId } = req.body
-    
+
     try {
-        const job = await Job.findOneAndUpdate({ _id: jobId , organization: req.user._id },
+        const job = await Job.findOneAndUpdate({ _id: jobId, posted_by: req.user._id }, // Fixed query to match model
             { submitted: true, updatedAt: Date.now() }, { new: true }
         )
 
@@ -152,7 +158,7 @@ router.post('/view', authToken, isPremiumOrg, async (req, res) => {
 
     try {
         const job = await Job.findOne({ _id: jobId, posted_by: req.user._id })
-        
+
         if (!job)
             return res.status(404).send({ status: 'error', msg: 'Job not found' })
 
@@ -173,7 +179,7 @@ router.post('/view', authToken, isPremiumOrg, async (req, res) => {
 // =========================================
 router.post('/update', authToken, isPremiumOrg, async (req, res) => {
     const { jobId, ...updateData } = req.body
-    
+
     if (!jobId)
         return res.status(400).send({ status: 'error', msg: 'Job ID is required' })
 
@@ -209,7 +215,7 @@ router.post('/close', authToken, isPremiumOrg, async (req, res) => {
         return res.status(400).send({ status: 'error', msg: 'Job ID is required' })
 
     try {
-        const job = await Job.findOneAndUpdate({ _id: jobId, posted_by: req.user._id }, { $set: { is_closed: true }},
+        const job = await Job.findOneAndUpdate({ _id: jobId, posted_by: req.user._id }, { $set: { is_closed: true } },
             { new: true }
         )
 
@@ -243,7 +249,7 @@ router.post('/delete', authToken, isPremiumOrg, async (req, res) => {
         if (!deleted)
             return res.status(404).send({ status: 'error', msg: 'Job not found or already deleted' })
 
-        
+
 
         return res.status(200).send({ status: 'ok', msg: 'success' })
 

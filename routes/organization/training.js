@@ -12,13 +12,18 @@ const uploader = require('../../utils/multer')
 // STEP 1: POST A TRAINING
 // ==========================
 router.post("/step_one", authToken, isPremiumUser, uploader.array('images', 5), async (req, res) => {
-    const { title, industry, training_type, training_mode, address, date, time, reg_deadline, is_certified } = req.body
+    const { title, industry, custom_industry, training_type, training_mode, address, date, time, reg_deadline, is_certified } = req.body
 
-    if ( !title || !industry || !training_type || !training_mode || !address || !date || !time
-        || !reg_deadline || !is_certified ) {
-        return res.status(400).send({ status: 'error', send: 'All fields are required'})
+    if (!title || !industry || !training_type || !training_mode || !address || !date || !time
+        || !reg_deadline || !is_certified) {
+        return res.status(400).send({ status: 'error', send: 'All fields are required' })
     }
-    
+
+    // Validate Industry
+    if (industry === 'Others' && !custom_industry) {
+        return res.status(400).send({ status: 'error', msg: 'Please specify your industry' })
+    }
+
     try {
         let images = []
 
@@ -39,8 +44,10 @@ router.post("/step_one", authToken, isPremiumUser, uploader.array('images', 5), 
                     quality: 'auto'
                 })
 
-                images.push({ img_id: upload.public_id, img_url: upload.secure_url, 
-                    thumb_id: thumb.public_id, thumb_url: thumb.secure_url }
+                images.push({
+                    img_id: upload.public_id, img_url: upload.secure_url,
+                    thumb_id: thumb.public_id, thumb_url: thumb.secure_url
+                }
                 )
             }
         }
@@ -69,6 +76,7 @@ router.post("/step_one", authToken, isPremiumUser, uploader.array('images', 5), 
             posted_by_model: 'Organization', // Or 'User' depending on who is posting
             title,
             industry,
+            custom_industry: industry === 'Others' ? custom_industry : undefined,
             training_type,
             training_mode,
             address,
@@ -93,10 +101,10 @@ router.post("/step_one", authToken, isPremiumUser, uploader.array('images', 5), 
 // ==========================
 router.post("/step_two", authToken, isPremiumUser, async (req, res) => {
     const { trainingId, about, gain, attendee, trainers, co_organizers } = req.body
-    if (!trainingId || !about || !gain || !attendee || !trainers || !co_organizers ) {
+    if (!trainingId || !about || !gain || !attendee || !trainers || !co_organizers) {
         return res.status(404).send({ status: 'error', msg: "All fields are required" })
     }
-    
+
     try {
         const training = await Training.findById(trainingId)
 
@@ -130,31 +138,31 @@ router.post("/step_two", authToken, isPremiumUser, async (req, res) => {
 // ==========================
 router.post("/step_three", authToken, isPremiumUser, async (req, res) => {
     const { trainingId, is_paid, has_tickets, tickets, training_fee, training_link, preferred_reg_method,
-        external_reg_url, msg_after_reg} = req.body
+        external_reg_url, msg_after_reg } = req.body
     if (!trainingId || is_paid == null || has_tickets == null || !msg_after_reg) {
         return res.status(404).send({ status: 'error', msg: "All fields are required" })
     }
-    
+
     try {
         // Validate preferred registration method
         const validMethods = ['kapacity', 'external']
         if (preferred_reg_method && !validMethods.includes(preferred_reg_method)) {
             return res.status(400).send({ status: 'error', msg: 'Invalid preferred registration method' })
         }
-        
+
         // Build step 3 object
         const step3Data = {
-            reg: {is_paid: is_paid, has_tickets: has_tickets},
+            reg: { is_paid: is_paid, has_tickets: has_tickets },
             tickets: has_tickets ? tickets : [], // Only save tickets if has_tickets = true
             training_fee: !has_tickets ? training_fee : null, // Only valid for non-ticket option
             training_link: training_link || null,
             preferred_reg_method: preferred_reg_method,
-            external_reg_url: preferred_reg_method === 'external' ? external_reg_url: null,
+            external_reg_url: preferred_reg_method === 'external' ? external_reg_url : null,
             msg_after_reg: msg_after_reg
         }
         const updatedTraining = await Training.findByIdAndUpdate(
-            { _id: trainingId, posted_by: req.user._id, posted_by_model: 'Organization' }, 
-            { $set: { ...step3Data, step: 3, updatedAt: Date.now() }}, { new: true })
+            { _id: trainingId, posted_by: req.user._id, posted_by_model: 'Organization' },
+            { $set: { ...step3Data, step: 3, updatedAt: Date.now() } }, { new: true })
 
         if (!updatedTraining) {
             return res.status(404).send({ status: 'error', msg: "Training not found." })
@@ -198,17 +206,19 @@ router.post('/preview', authToken, isPremiumUser, async (req, res) => {
 // =========================================
 router.post('/publish', authToken, isPremiumUser, async (req, res) => {
     const { trainingId } = req.body
-    
+
     try {
-        const training = await Training.findOneAndUpdate({ _id: trainingId, posted_by: req.user._id,
-            posted_by_model: 'Organization'  }, { $set: { is_published: true , updatedAt: Date.now() }}, { new: true }
+        const training = await Training.findOneAndUpdate({
+            _id: trainingId, posted_by: req.user._id,
+            posted_by_model: 'Organization'
+        }, { $set: { is_published: true, updatedAt: Date.now() } }, { new: true }
         )
 
         if (!training)
             return res.status(404).send({ status: 'error', msg: 'Training not found' })
 
         if (training.step !== 3)
-            return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing'})
+            return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing' })
 
         training.admin_status = 'submitted'
         training.updatedAt = Date.now()
@@ -228,7 +238,7 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
 router.post('/all', authToken, isPremiumUser, async (req, res) => {
     try {
         const trainings = await Training.find({ posted_by: req.user._id, posted_by_model: 'Organization' })
-        .sort({ date_posted: -1 })
+            .sort({ date_posted: -1 })
 
         if (!trainings.length)
             return res.status(200).send({ status: 'ok', msg: 'No training postings found' })
@@ -255,9 +265,11 @@ router.post('/view', authToken, isPremiumUser, async (req, res) => {
         return res.status(400).send({ status: 'error', msg: 'Training ID is required' })
 
     try {
-        const training = await Training.findOne({ _id: trainingId, posted_by: req.user._id,
-            posted_by_model: 'Organization'})
-        
+        const training = await Training.findOne({
+            _id: trainingId, posted_by: req.user._id,
+            posted_by_model: 'Organization'
+        })
+
         if (!training)
             return res.status(404).send({ status: 'error', msg: 'Training not found' })
 
@@ -278,7 +290,7 @@ router.post('/view', authToken, isPremiumUser, async (req, res) => {
 // =========================================
 router.post('/update', authToken, isPremiumUser, async (req, res) => {
     const { trainingId, ...updateData } = req.body
-    
+
     if (!trainingId)
         return res.status(400).send({ status: 'error', msg: 'Training ID is required' })
 
@@ -317,8 +329,8 @@ router.post('/close', authToken, isPremiumUser, async (req, res) => {
 
     try {
         const training = await Training.findOneAndUpdate(
-            { _id: trainingId, posted_by: req.user._id, posted_by_model: 'Organization' }, 
-            { $set: { is_closed: true }}, { new: true })
+            { _id: trainingId, posted_by: req.user._id, posted_by_model: 'Organization' },
+            { $set: { is_closed: true } }, { new: true })
 
         if (!training)
             return res.status(404).send({ status: 'error', msg: 'Training not found' })
@@ -352,7 +364,7 @@ router.post('/delete', authToken, isPremiumUser, async (req, res) => {
         if (!deleted)
             return res.status(404).send({ status: 'error', msg: 'Training not found or already deleted' })
 
-        
+
 
         return res.status(200).send({ status: 'ok', msg: 'success' })
 

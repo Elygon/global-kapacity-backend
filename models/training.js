@@ -21,9 +21,9 @@ const PaymentCategorySchema = new mongoose.Schema({
 }, { _id: false })
 
 const trainingSchema = new mongoose.Schema({
-    posted_by: {type: mongoose.Schema.Types.ObjectId, refPath: 'posted_by_model', required: true},
+    posted_by: { type: mongoose.Schema.Types.ObjectId, refPath: 'posted_by_model', required: true },
     posted_by_model: { type: String, enum: ['User', 'Organization'] },
-    selected_kip: {type: mongoose.Schema.Types.ObjectId, refPath: 'selected_kip_model', default: null},
+    selected_kip: { type: mongoose.Schema.Types.ObjectId, refPath: 'selected_kip_model', default: null },
     selected_kip_model: { type: String, enum: ['User', 'Organization'] },
 
     // Step 1 (Training Details)
@@ -33,7 +33,7 @@ const trainingSchema = new mongoose.Schema({
         enum: [
             'Aerospace & Aviation', 'Agriculture & Agribusiness', 'Automotive & Mobility', 'Banking/Fintech', 'Beauty & Wellness',
             'Communication/Digital Marketing', 'Construction & Engineering', 'Consulting & Advisory', 'Content/Social Influencer',
-            'Creative & Media','Education & Training','Energy & Utilities','Entertainment & Events', 'Environmental Services',
+            'Creative & Media', 'Education & Training', 'Energy & Utilities', 'Entertainment & Events', 'Environmental Services',
             'Fashion & Apparel', 'Finance and Banking', 'Food & Beverage', 'Government & Public Services', 'Healthcare & Medical',
             'Hospitality & Tourism', 'Human Resources & Recruitment', 'Information and Communication Technology', 'Legal & Compliance',
             'Logistics & Transportation', 'Manufacturing & Industrial', 'Non-Profit & NGOs', 'Printing & Publishing', 'Real Estate & Property',
@@ -41,8 +41,9 @@ const trainingSchema = new mongoose.Schema({
             'Sports & Recreation', 'Technology & Software', 'Telecommunications', 'Others' // Default for custom input
         ]
     },
-    training_type: { type: String, enum: [ 'Bootcamp', 'Master Class', 'Seminar', 'Workshop'] },
-    training_mode: { type: String, enum: [ 'Virtual', 'In-Person', 'Hybrid'] },
+    custom_industry: { type: String }, // only used if industry === 'Others'
+    training_type: { type: String, enum: ['Bootcamp', 'Master Class', 'Seminar', 'Workshop'] },
+    training_mode: { type: String, enum: ['Virtual', 'In-Person', 'Hybrid'] },
     address: String,
     date: Date,
     time: String,
@@ -72,7 +73,7 @@ const trainingSchema = new mongoose.Schema({
     // After Training Posting has been submitting
     admin_status: {
         type: String,
-        enum: [ 'submitted', 'rejected', 'approved', 'sent to kip' ],
+        enum: ['submitted', 'rejected', 'approved', 'sent to kip'],
         default: 'submitted'
     },
     admin_rejection_reason: { type: String, default: null },

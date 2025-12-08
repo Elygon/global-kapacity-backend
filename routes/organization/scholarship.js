@@ -13,11 +13,11 @@ router.post("/step_one", authToken, isPremiumUser, async (req, res) => {
     const { title, description, field_of_study, sponsoring_org_name, scholarship_type, mode_of_study,
         academic_level } = req.body
 
-    if ( !title || !description || !field_of_study || !sponsoring_org_name || !scholarship_type || !mode_of_study 
-        || !academic_level ) {
-        return res.status(400).send({ status: 'error', send: 'All fields are required'})
+    if (!title || !description || !field_of_study || !sponsoring_org_name || !scholarship_type || !mode_of_study
+        || !academic_level) {
+        return res.status(400).send({ status: 'error', send: 'All fields are required' })
     }
-    
+
     try {
         const newScholar = new Scholarship({
             posted_by: req.user._id, // This references the user/org creating the schoarship
@@ -44,8 +44,8 @@ router.post("/step_one", authToken, isPremiumUser, async (req, res) => {
 // STEP 2: POST A SCHOLARSHIP
 // ==========================
 router.post("/step_two", authToken, isPremiumUser, async (req, res) => {
-    const { scholarshipId, eligibility_criteria, requirements, benefits, no_of_slots, region, scholarship_value } = req.body
-    if (!scholarshipId || !eligibility_criteria || !requirements || !benefits || !no_of_slots || !region 
+    const { scholarshipId, eligibility_criteria, requirements, benefits, no_of_slots, region, custom_region, scholarship_value } = req.body
+    if (!scholarshipId || !eligibility_criteria || !requirements || !benefits || !no_of_slots || !region
         || !scholarship_value
     ) {
         return res.status(404).send({ status: 'error', msg: "All fields are required" })
@@ -58,7 +58,12 @@ router.post("/step_two", authToken, isPremiumUser, async (req, res) => {
     if (isNaN(slots) || slots < 1) {
         return res.status(400).send({ status: 'error', msg: "Number of slots must be a valid number greater than 0" })
     }
-    
+
+    // Validate Region
+    if (region === 'Others' && !custom_region) {
+        return res.status(400).send({ status: 'error', msg: 'Please specify your region' })
+    }
+
     try {
         const scholarship = await Scholarship.findById(scholarshipId)
 
@@ -72,6 +77,7 @@ router.post("/step_two", authToken, isPremiumUser, async (req, res) => {
         scholarship.benefits = benefits
         scholarship.no_of_slots = no_of_slots
         scholarship.region = region
+        scholarship.custom_region = region === 'Others' ? custom_region : undefined
         scholarship.scholarship_value = Array.isArray(scholarship_value) ? scholarship_value : [scholarship_value]
         scholarship.step = 2
 
@@ -89,11 +95,11 @@ router.post("/step_two", authToken, isPremiumUser, async (req, res) => {
 // ==========================
 router.post("/step_three", authToken, isPremiumUser, async (req, res) => {
     const { scholarshipId, open_date, deadline, shortlist_date, interview_date, winners_announcement_date,
-        disbursement_date, application_link} = req.body
+        disbursement_date, application_link } = req.body
     if (!scholarshipId || !open_date || !deadline || !application_link) {
         return res.status(404).send({ status: 'error', msg: "All fields are required" })
     }
-    
+
     try {
         // Build step 3 object
         const step3Data = {
@@ -106,8 +112,8 @@ router.post("/step_three", authToken, isPremiumUser, async (req, res) => {
             application_link: application_link
         }
         const updated = await Scholarship.findByIdAndUpdate(
-            { _id: scholarshipId, posted_by: req.user._id, posted_by_model: 'Organization' }, 
-            { $set: { ...step3Data, step: 3, updatedAt: Date.now() }}, { new: true })
+            { _id: scholarshipId, posted_by: req.user._id, posted_by_model: 'Organization' },
+            { $set: { ...step3Data, step: 3, updatedAt: Date.now() } }, { new: true })
 
         if (!updated) {
             return res.status(404).send({ status: 'error', msg: "Scholarship not found." })
@@ -126,17 +132,19 @@ router.post("/step_three", authToken, isPremiumUser, async (req, res) => {
 // =========================================
 router.post('/publish', authToken, isPremiumUser, async (req, res) => {
     const { scholarshipId } = req.body
-    
+
     try {
-        const scholarship = await Scholarship.findOneAndUpdate({ _id: scholarshipId, posted_by: req.user._id,
-            posted_by_model: 'Organization'  }, { $set: { is_published: true , updatedAt: Date.now() }}, { new: true }
+        const scholarship = await Scholarship.findOneAndUpdate({
+            _id: scholarshipId, posted_by: req.user._id,
+            posted_by_model: 'Organization'
+        }, { $set: { is_published: true, updatedAt: Date.now() } }, { new: true }
         )
 
         if (!scholarship)
             return res.status(404).send({ status: 'error', msg: 'Scholarship not found' })
 
         if (scholarship.step !== 3)
-            return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing'})
+            return res.status(400).send({ send: 'error', msg: 'Complete all steps before publishing' })
 
         scholarship.admin_status = 'submitted'
         scholarship.updatedAt = Date.now()
@@ -159,7 +167,7 @@ router.post('/publish', authToken, isPremiumUser, async (req, res) => {
 router.post('/all', authToken, isPremiumUser, async (req, res) => {
     try {
         const scholarships = await Scholarship.find({ posted_by: req.user._id, posted_by_model: 'Organization' })
-        .sort({ date_posted: -1 })
+            .sort({ date_posted: -1 })
 
         if (!scholarships.length)
             return res.status(200).send({ status: 'ok', msg: 'No scholarship postings found' })
@@ -186,9 +194,11 @@ router.post('/view', authToken, isPremiumUser, async (req, res) => {
         return res.status(400).send({ status: 'error', msg: 'Scholarship ID is required' })
 
     try {
-        const scholarship = await Scholarship.findOne({ _id: scholarshipId, posted_by: req.user._id,
-            posted_by_model: 'Organization'})
-        
+        const scholarship = await Scholarship.findOne({
+            _id: scholarshipId, posted_by: req.user._id,
+            posted_by_model: 'Organization'
+        })
+
         if (!scholarship)
             return res.status(404).send({ status: 'error', msg: 'Scholarship not found' })
 
@@ -209,7 +219,7 @@ router.post('/view', authToken, isPremiumUser, async (req, res) => {
 // =========================================
 router.post('/update', authToken, isPremiumUser, async (req, res) => {
     const { scholarshipId, ...updateData } = req.body
-    
+
     if (!scholarshipId)
         return res.status(400).send({ status: 'error', msg: 'Scholarship ID is required' })
 
@@ -248,8 +258,8 @@ router.post('/close', authToken, isPremiumUser, async (req, res) => {
 
     try {
         const scholarship = await Scholarship.findOneAndUpdate(
-            { _id: scholarshipId, posted_by: req.user._id, posted_by_model: 'Organization' }, 
-            { $set: { is_closed: true }}, { new: true })
+            { _id: scholarshipId, posted_by: req.user._id, posted_by_model: 'Organization' },
+            { $set: { is_closed: true } }, { new: true })
 
         if (!scholarship)
             return res.status(404).send({ status: 'error', msg: 'Scholarship not found' })
@@ -283,7 +293,7 @@ router.post('/delete', authToken, isPremiumUser, async (req, res) => {
         if (!deleted)
             return res.status(404).send({ status: 'error', msg: 'Scholarship not found or already deleted' })
 
-        
+
 
         return res.status(200).send({ status: 'ok', msg: 'success' })
 

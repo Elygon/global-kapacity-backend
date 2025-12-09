@@ -13,8 +13,9 @@ const { sendKipApprovalMail, sendKipRejectionMail } = require('../../utils/nodem
 router.post('/all', authToken, async (req, res) => {
     try {
         const apps = await KIPApplication.find().populate('organization_id', 'name email').sort({ createdAt: -1 })
+        if (apps.length === 0) return res.status(200).send({ status: "ok", msg: "No impact partner application found" })
 
-        res.status(200).send({ status: 'ok', msg: 'success', apps })
+        res.status(200).send({ status: 'ok', msg: 'success', count: apps.length, apps })
     } catch (err) {
         return res.status(500).send({ status: 'error', msg: 'Error occurred', error: err.message })
     }
@@ -98,13 +99,17 @@ router.post('/reject', authToken, async (req, res) => {
         return res.status(400).send({ status: 'error', msg: 'Invalid ApplIcation ID' })
     }
 
+    if (!reason) {
+        return res.status(400).send({ status: 'error', msg: 'Rejection reason is required' })
+    }
+
     try {
         const app = await KIPApplication.findById(appId)
         if (!app) return res.status(404).send({ status: 'error', msg: 'Application not found' })
 
         // Update application status
         app.status = 'Rejected'
-        app.rejection_reason = reason || ''
+        app.rejection_reason = reason
         await app.save()
 
         // Send KIP Rejection Email

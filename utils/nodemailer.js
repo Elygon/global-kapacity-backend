@@ -195,20 +195,50 @@ const sendKipApprovalMail = async (email, organization_name) => {
     }
 }
 
-const sendKipRejectionMail = async (email, organization_name) => {
+const sendKipRejectionMail = async (email, organization_name, reason) => {
     try {
         const info = await transport.sendMail({
             from: `"Global Kapacity" <${process.env.MAIL_USER}>`,
             to: email,
             subject: "Update on Your KIP Application",
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
                     <h2>Application Update</h2>
+
                     <p>Dear ${organization_name},</p>
-                    <p>Thank you for your interest in becoming a Kapacity Impact Partner.</p>
-                    <p>After careful review, we regret to inform you that we cannot proceed with your application at this time.</p>
-                    <br/>
-                    <p>We encourage you to apply again in the future.</p>
+
+                    <p>
+                        Thank you for your interest in becoming a <strong>Kapacity Impact Partner (KIP)</strong>.
+                        We appreciate the time and effort you put into your application.
+                    </p>
+
+                    <p>
+                        After careful review, we regret to inform you that we are unable to proceed with your application at this time.
+                    </p>
+
+                    ${
+                        reason
+                        ? `
+                        <p><strong>Reason:</strong></p>
+                        <p style="background:#f5f5f5; padding:10px; border-left:4px solid #d9534f;">
+                            ${reason}
+                        </p>
+                        `
+                        : ''
+                    }
+
+                    <p>
+                        We encourage you to review the feedback provided and reapply in the future when the requirements are met.
+                    </p>
+
+                    <p>
+                        If you have any questions or need further clarification, feel free to reach out to our support team.
+                    </p>
+
+                    <p>
+                        Warm regards,<br/>
+                        <strong>Global Kapacity Team</strong>
+                    </p>
                 </div>
             `
         })
@@ -218,6 +248,7 @@ const sendKipRejectionMail = async (email, organization_name) => {
         console.error("Error sending KIP Rejection Email:", error)
     }
 }
+
 
 
 // ===============================

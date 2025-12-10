@@ -29,7 +29,7 @@ const auth = async (req, res, next) => {
 
     // If the 'From' header is missing, reject the request
     if (!from) {
-      return res.status(401).json({ status: 'error', msg: 'From header must be set (user/admin)' })
+      return res.status(401).json({ status: 'error', msg: 'From header must be set (user/organization/admin)' })
     }
 
     // Verify the token using your secret key from the .env file

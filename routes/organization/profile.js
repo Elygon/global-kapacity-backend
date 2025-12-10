@@ -8,6 +8,7 @@ const UserProfile = require('../../models/user_profile')
 
 const cloudinary = require('../../utils/cloudinary')
 const uploader = require('../../utils/multer')
+const bcrypt = require('bcryptjs')
 
 
 
@@ -90,8 +91,8 @@ router.post('/edit', uploader.single('profile_img'), authToken, async (req, res)
         const updatedOrg = await Organization.findByIdAndUpdate(orgId, orgUpdate, { new: true })
 
         // ==== UPDATE ORGANIZATION PROFILE ====
-        let profile = await OrganizationProfile.findOne({ user_id: orgId })
-        if (!profile) profile = new OrganizationProfile({ user_id: orgId })
+        let profile = await OrganizationProfile.findOne({ organization_id: orgId })
+        if (!profile) profile = new OrganizationProfile({ organization_id: orgId })
 
         if (company_bio) {
             profile.company_bio = { ...profile.company_bio.toObject(), ...company_bio }
@@ -123,7 +124,7 @@ router.post('/edit', uploader.single('profile_img'), authToken, async (req, res)
 
 
 // endpoint to upload media photos
-router.post('upload_photos', authToken, uploader.single('file'), async (req, res) => {
+router.post('/upload_photos', authToken, uploader.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).send({ status: 'error', msg: 'No file uploaded' })
 
@@ -131,8 +132,18 @@ router.post('upload_photos', authToken, uploader.single('file'), async (req, res
             folder: "media/photos"
         })
 
-        const profile = await OrganizationProfile.findOne({ organization_id: req.user._id });
-        profile.media.photos.push({
+        let profile = await OrganizationProfile.findOne({ organization_id: req.user._id });
+
+        if (!profile) {
+            profile = new OrganizationProfile({ organization_id: req.user._id })
+        }
+
+        // Ensure media array exists and has at least one element
+        if (!profile.media || profile.media.length === 0) {
+            profile.media = [{ photos: [], videos: [], awards: [] }]
+        }
+
+        profile.media[0].photos.push({
             file_url: upload.secure_url,
             file_id: upload.public_id
         })
@@ -156,8 +167,18 @@ router.post('/upload_videos', authToken, uploader.single('file'), async (req, re
             folder: "media/videos"
         })
 
-        const profile = await OrganizationProfile.findOne({ organization_id: req.user._id })
-        profile.media.videos.push({
+        let profile = await OrganizationProfile.findOne({ organization_id: req.user._id })
+
+        if (!profile) {
+            profile = new OrganizationProfile({ organization_id: req.user._id })
+        }
+
+        // Ensure media array exists and has at least one element
+        if (!profile.media || profile.media.length === 0) {
+            profile.media = [{ photos: [], videos: [], awards: [] }]
+        }
+
+        profile.media[0].videos.push({
             file_url: upload.secure_url,
             file_id: upload.public_id
         })
@@ -180,8 +201,18 @@ router.post('/upload_awards', authToken, uploader.single('file'), async (req, re
             folder: "media/awards"
         })
 
-        const profile = await OrganizationProfile.findOne({ organization_id: req.user._id })
-        profile.media.awards.push({
+        let profile = await OrganizationProfile.findOne({ organization_id: req.user._id })
+
+        if (!profile) {
+            profile = new OrganizationProfile({ organization_id: req.user._id })
+        }
+
+        // Ensure media array exists and has at least one element
+        if (!profile.media || profile.media.length === 0) {
+            profile.media = [{ photos: [], videos: [], awards: [] }]
+        }
+
+        profile.media[0].awards.push({
             file_url: upload.secure_url,
             file_id: upload.public_id
         })
@@ -204,13 +235,21 @@ router.post('/delete_media', authToken, async (req, res) => {
         if (!file_id || !type)
             return res.status(400).send({ status: 'error', msg: 'all fields are required' })
 
-        const profile = await OrganizationProfile.findOne({ Organization_id: req.user._id })
+        const profile = await OrganizationProfile.findOne({ organization_id: req.user._id })
+
+        if (!profile) {
+            return res.status(404).send({ status: 'error', msg: 'Organization profile not found' })
+        }
+
+        if (!profile.media || profile.media.length === 0) {
+            return res.status(404).send({ status: 'error', msg: 'No media found' })
+        }
 
         let list = null
 
-        if (type === "photo") list = profile.media.photos
-        if (type === "video") list = profile.media.videos
-        if (type === "award") list = profile.media.awards
+        if (type === "photo") list = profile.media[0].photos
+        if (type === "video") list = profile.media[0].videos
+        if (type === "award") list = profile.media[0].awards
 
         const index = list.findIndex(item => item.file_id === file_id)
         if (index === -1) return res.status(404).send({ status: 'error', msg: 'File not found' })
@@ -257,7 +296,7 @@ router.post('/setup_pin', authToken, async (req, res) => {
     const { twoFAPin, confirm_twoFAPin } = req.body
 
     //check if fields are passed correctly
-    if (!twoFAPin || !confirm_twoFAPin || twoFAPin.length !== 6 || confirm_twoFAPin !== 6) {
+    if (!twoFAPin || !confirm_twoFAPin || twoFAPin.length !== 6 || confirm_twoFAPin.length !== 6) {
         return res.status(400).send({ status: 'error', msg: 'Both 2FA Pin and Confirm 2FA Pin must be 6 digits' })
     }
 
@@ -277,7 +316,7 @@ router.post('/setup_pin', authToken, async (req, res) => {
             return res.status(400).send({ status: 'error', msg: '2FA Pin already set' })
         }
 
-        const hashedPin = await bcrypt.hash(pin, 10)
+        const hashedPin = await bcrypt.hash(twoFAPin, 10)
         org.twoFAPin = hashedPin
         await org.save()
 
@@ -298,7 +337,7 @@ router.post('/edit_pin', authToken, async (req, res) => {
 
     //check if fields are passed correctly
     if (!current_twoFAPin || !new_twoFAPin || !confirm_new_twoFAPin || new_twoFAPin.length !== 6 ||
-        confirm_new_twoFAPin !== 6) {
+        confirm_new_twoFAPin.length !== 6) {
         return res.status(400).send({ status: 'error', msg: 'Both 2FA Pin and Confirm 2FA Pin must be 6 digits' })
     }
 
@@ -314,7 +353,7 @@ router.post('/edit_pin', authToken, async (req, res) => {
             return res.status(400).send({ status: 'error', msg: 'Organization not found' })
         }
 
-        if (org.twoFAPin) {
+        if (!org.twoFAPin) {
             return res.status(400).send({ status: 'error', msg: '2FA Pin not set' })
         }
 
@@ -323,7 +362,7 @@ router.post('/edit_pin', authToken, async (req, res) => {
             return res.status(400).send({ status: 'error', msg: 'Current 2FA Pin is incorrect' })
         }
 
-        const hashedNewPin = await bcrypt.hash(pin, 10)
+        const hashedNewPin = await bcrypt.hash(new_twoFAPin, 10)
         org.twoFAPin = hashedNewPin
         await org.save()
 

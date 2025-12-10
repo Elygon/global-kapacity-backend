@@ -112,7 +112,7 @@ router.post('/edit', uploader.single('profile_img'), authToken, async (req, res)
 })
 
 // endpoint to upload media photos
-router.post('upload_photos', authToken, uploader.single('file'), async (req, res) => {
+router.post('/upload_photos', authToken, uploader.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).send({ status: 'error', msg: 'No file uploaded' })
 

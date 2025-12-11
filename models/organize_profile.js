@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const orgProfileSchema = new Schema({
-    organization_id: { type: mongoose.Schema.Types.ObjectId, ref: "Organizaton", required: true },
+    organization_id: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
     company_location: [{
         country: String,
         state: String,
@@ -41,9 +41,9 @@ const orgProfileSchema = new Schema({
             { file_id: String, file_url: String }
         ]
     }],
-    profile_img_id: { type: String, default: '' },
-    profile_img_url: { type: String, default: '' },
-    notificationsEnabled: { type: Boolean, default: false }
+    profile_img_id: { type: String, default: '' }, // Cloudinary public ID
+    profile_img_url: { type: String, default: '' }, // Profile image URL
+    notificationsEnabled: { type: Boolean, default: false } // Notification toggle
 }, { timestamps: true, collection: 'organizations_profile'})
 
 const model = mongoose.model('OrganizationProfile', orgProfileSchema)

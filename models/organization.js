@@ -50,6 +50,7 @@ const organizationSchema = new Schema({
     email: String,
     phone_no: String,
     password: String,
+    twoFAPin: { type: String, default: null }, // Hashed 2FA PIN for profile switching
     authProvider: {
         type: String,
         enum: ['email', 'google', 'apple'],

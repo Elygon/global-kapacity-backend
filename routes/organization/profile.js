@@ -19,7 +19,7 @@ router.post('/view', authToken, async (req, res) => {
         if (!org)
             return res.status(200).send({ status: 'ok', msg: 'Organization not found' })
 
-        const profile = await UserProfile.findOne({ organization_id: org._id })
+        const profile = await OrganizationProfile.findOne({ organization_id: org._id })
         if (!profile) {
             return res.status(200).send({ status: 'ok', msg: 'Profile not found', org })
         }
@@ -398,27 +398,25 @@ router.post('/switch', authToken, async (req, res) => {
             return res.status(401).send({ status: 'error', msg: 'Incorrect password' })
         }
 
-        // Check if 2FA PIN exists and matches and matches
+        // Check if 2FA PIN exists and matches
         if (!org.twoFAPin) {
             return res.status(400).send({ status: 'error', msg: 'Set up 2FA PIN first' })
         }
 
-        if (org.twoFAPin !== twoFAPin) {
+        const isPinValid = await bcrypt.compare(twoFAPin, org.twoFAPin)
+        if (!isPinValid) {
             return res.status(401).send({ status: 'error', msg: 'Incorrect 2FA PIN' })
         }
 
         // Check if user profile already exists
-        let userProfile = await UserProfile.findOne({ owner_user_id: org._id })
+        let userProfile = await UserProfile.findOne({ user_id: org._id })
 
-        if (userProfile) {
+        if (!userProfile) {
             // Create user Profile if none exists
             userProfile = new UserProfile({
-                owner_user_id: org._id,
-                firstname: '',
-                lastname: '',
-                industry: '',
-                email: org.email,
-                phone_no: org.phone_no
+                user_id: org._id,
+                gender: '',
+                address: ''
             })
             await userProfile.save()
         }
@@ -433,6 +431,63 @@ router.post('/switch', authToken, async (req, res) => {
         return res.status(500).send({ status: 'error', msg: 'An error occured', error: error.message })
     }
 })
+
+
+/*
+// Switch back to Organization Profile
+router.post('/switch_to_org', authToken, async (req, res) => {
+    const { password, twoFAPin } = req.body
+
+    if (!password || !twoFAPin) {
+        return res.status(400).send({ status: 'error', msg: 'All fields are required' })
+    }
+
+    try {
+        const org = await Organization.findById(req.user._id)
+
+        if (!org) {
+            return res.status(404).send({ status: 'error', msg: 'Organization not found' })
+        }
+
+        // Check password
+        const isPasswordValid = await bcrypt.compare(password, org.password)
+        if (!isPasswordValid) {
+            return res.status(401).send({ status: 'error', msg: 'Incorrect password' })
+        }
+
+        // Check if 2FA PIN exists and matches
+        if (!org.twoFAPin) {
+            return res.status(400).send({ status: 'error', msg: 'Set up 2FA PIN first' })
+        }
+
+        const isPinValid = await bcrypt.compare(twoFAPin, org.twoFAPin)
+        if (!isPinValid) {
+            return res.status(401).send({ status: 'error', msg: 'Incorrect 2FA PIN' })
+        }
+
+        // Get organization profile
+        let orgProfile = await OrganizationProfile.findOne({ organization_id: org._id })
+
+        if (!orgProfile) {
+            // Create organization profile if none exists
+            orgProfile = new OrganizationProfile({
+                organization_id: org._id
+            })
+            await orgProfile.save()
+        }
+
+        // Send response with organization profile data
+        return res.status(200).send({ status: 'ok', msg: 'success', activeProfile: 'Organization', org, orgProfile })
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError') {
+            console.log(error)
+            return res.status(401).send({ status: 'error', msg: 'Token Verification Failed', error: error.message })
+        }
+        return res.status(500).send({ status: 'error', msg: 'An error occured', error: error.message })
+    }
+})
+*/
+
 
 /*
 // endpoint to change password

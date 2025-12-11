@@ -8,7 +8,7 @@ const userSchema = new Schema({
     email: String,
     phone_no: String,
     password: String,
-    twoFAPin: String, // 2FA PIN
+    twoFAPin: String, // Hashed 2FA PIN for profile switching
     authProvider: {
         type: String,
         enum: ['email', 'google', 'apple'],

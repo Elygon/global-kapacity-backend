@@ -5,32 +5,35 @@ const authToken = require('../../middleware/authToken') // your middleware
 const User = require('../../models/user')
 const Organization = require('../../models/organization')
 const UserProfile = require('../../models/user_profile')
+const OrganizationProfile = require('../../models/organize_profile')
 
 const cloudinary = require('../../utils/cloudinary')
 const uploader = require('../../utils/multer')
+const bcrypt = require('bcryptjs')
+
 
 
 
 // endpoint to view profile
-router.post('/view', authToken, async(req, res) =>{
+router.post('/view', authToken, async (req, res) => {
     try {
         const user = await User.findById(req.user._id).select('-password -twoFAPin') // hide sensitive info
-        if(!user)
-            return res.status(200).send({status: 'ok', msg: 'User not found'})
+        if (!user)
+            return res.status(200).send({ status: 'ok', msg: 'User not found' })
 
         const profile = await UserProfile.findOne({ user_id: user._id })
         if (!profile) {
             return res.status(200).send({ status: 'ok', msg: 'Profile not found', user })
         }
 
-        return res.status(200).send({status: 'ok', msg: 'success', user, profile})
-        
+        return res.status(200).send({ status: 'ok', msg: 'success', user, profile })
+
     } catch (error) {
         console.log(error)
-        if(error.name == "JsonWebTokenError")
-            return res.status(400).send({status: 'error', msg: 'Invalid token'})
+        if (error.name == "JsonWebTokenError")
+            return res.status(400).send({ status: 'error', msg: 'Invalid token' })
 
-        return res.status(500).send({status: 'error', msg:'Error occured'})
+        return res.status(500).send({ status: 'error', msg: 'Error occured' })
     }
 })
 
@@ -38,7 +41,7 @@ router.post('/view', authToken, async(req, res) =>{
 // endpoint to edit user profile
 router.post('/edit', uploader.single('profile_img'), authToken, async (req, res) => {
     try {
-        const { firstname, lastname, email, phone_no, gender, date_of_birth, address,professional_bio, school,
+        const { firstname, lastname, email, phone_no, gender, date_of_birth, address, professional_bio, school,
             organization, certifications, skills, professional_membership, others, mentors, profile_img_url,
             profile_img_id
         } = req.body
@@ -107,7 +110,7 @@ router.post('/edit', uploader.single('profile_img'), authToken, async (req, res)
 
     } catch (error) {
         console.error(error)
-        return res.status(500).send({ status: 'error', msg: 'Error occurred', error: error.message})
+        return res.status(500).send({ status: 'error', msg: 'Error occurred', error: error.message })
     }
 })
 
@@ -241,143 +244,149 @@ router.post('/all_media', authToken, async (req, res) => {
 })
 
 // endpoint to set up 2FA Pin
-router.post('/setup_pin', authToken, async(req, res)=>{
-    const {twoFAPin, confirm_twoFAPin} = req.body
+router.post('/setup_pin', authToken, async (req, res) => {
+    const { twoFAPin, confirm_twoFAPin } = req.body
 
     //check if fields are passed correctly
-    if(!twoFAPin || !confirm_twoFAPin || twoFAPin.length !== 6 || confirm_twoFAPin !== 6) {
-       return res.status(400).send({status: 'error', msg: 'Both 2FA Pin and Confirm 2FA Pin must be 6 digits'})
+    if (!twoFAPin || !confirm_twoFAPin || twoFAPin.length !== 6 || confirm_twoFAPin.length !== 6) {
+        return res.status(400).send({ status: 'error', msg: 'Both 2FA Pin and Confirm 2FA Pin must be 6 digits' })
     }
 
-    if ( twoFAPin !== confirm_twoFAPin) {
-        return res.status(400).send({status: 'error', msg: '2FA Pin mismatch'})
+    if (twoFAPin !== confirm_twoFAPin) {
+        return res.status(400).send({ status: 'error', msg: '2FA Pin mismatch' })
     }
 
     // get user document
     try {
-        const user =  await User.findById(req.user._id)
+        const user = await User.findById(req.user._id)
 
         if (!user) {
-            return res.status(400).send({status:'error', msg:'User not found'})
+            return res.status(400).send({ status: 'error', msg: 'User not found' })
         }
 
         if (user.twoFAPin) {
-            return res.status(400).send({ status: 'error', msg: '2FA Pin already set'})
+            return res.status(400).send({ status: 'error', msg: '2FA Pin already set' })
         }
 
-        const hashedPin = await bcrypt.hash(pin, 10)
+        const hashedPin = await bcrypt.hash(twoFAPin, 10)
         user.twoFAPin = hashedPin
         await user.save()
 
-        return res.status(200).send({status: 'ok', msg: 'success'})
+        return res.status(200).send({ status: 'ok', msg: 'success' })
     } catch (error) {
-        if(error.name === 'JsonWebTokenError'){
-        console.log(error)
-        return res.status(401).send({status: 'error', msg: 'Token Verification Failed', error: error.message})
-}
-      return res.status(500).send({status: 'error', msg: 'An error occured', error: error.message})}
+        if (error.name === 'JsonWebTokenError') {
+            console.log(error)
+            return res.status(401).send({ status: 'error', msg: 'Token Verification Failed', error: error.message })
+        }
+        return res.status(500).send({ status: 'error', msg: 'An error occured', error: error.message })
+    }
 })
 
 
 // edit 2FA Pin
-router.post('/edit_pin', authToken, async(req, res)=>{
-    const {current_twoFAPin, new_twoFAPin, confirm_new_twoFAPin} = req.body
+router.post('/edit_pin', authToken, async (req, res) => {
+    const { current_twoFAPin, new_twoFAPin, confirm_new_twoFAPin } = req.body
 
     //check if fields are passed correctly
-    if(!current_twoFAPin || !new_twoFAPin || !confirm_new_twoFAPin || new_twoFAPin.length !== 6 || 
-        confirm_new_twoFAPin !== 6) {
-            return res.status(400).send({status: 'error', msg: 'Both 2FA Pin and Confirm 2FA Pin must be 6 digits'})
-        }
+    if (!current_twoFAPin || !new_twoFAPin || !confirm_new_twoFAPin || new_twoFAPin.length !== 6 ||
+        confirm_new_twoFAPin.length !== 6) {
+        return res.status(400).send({ status: 'error', msg: 'Both 2FA Pin and Confirm 2FA Pin must be 6 digits' })
+    }
 
-    if ( new_twoFAPin !== confirm_new_twoFAPin) {
-        return res.status(400).send({status: 'error', msg: 'Pin mismatch'})
+    if (new_twoFAPin !== confirm_new_twoFAPin) {
+        return res.status(400).send({ status: 'error', msg: 'Pin mismatch' })
     }
 
     // get user document
     try {
-        const user =  await User.findById(req.user._id)
+        const user = await User.findById(req.user._id)
 
         if (!user) {
-            return res.status(400).send({status:'error', msg:'User not found'})
+            return res.status(400).send({ status: 'error', msg: 'User not found' })
         }
 
-        if (user.twoFAPin) {
-            return res.status(400).send({ status: 'error', msg: '2FA Pin not set'})
+        if (!user.twoFAPin) {
+            return res.status(400).send({ status: 'error', msg: '2FA Pin not set' })
         }
 
         const isMatch = await bcrypt.compare(current_twoFAPin, user.twoFAPin)
         if (!isMatch) {
-            return res.status(400).send({ status: 'error', msg: 'Current 2FA Pin is incorrect'})
+            return res.status(400).send({ status: 'error', msg: 'Current 2FA Pin is incorrect' })
         }
 
-        const hashedNewPin = await bcrypt.hash(pin, 10)
+        const hashedNewPin = await bcrypt.hash(new_twoFAPin, 10)
         user.twoFAPin = hashedNewPin
         await user.save()
 
-        return res.status(200).send({status: 'ok', msg: 'success'})
+        return res.status(200).send({ status: 'ok', msg: 'success' })
     } catch (error) {
-        if(error.name === 'JsonWebTokenError'){
-        console.log(error)
-        return res.status(401).send({status: 'error', msg: 'Token Verification Failed', error: error.message})
-}
-      return res.status(500).send({status: 'error', msg: 'An error occured', error: error.message})}
+        if (error.name === 'JsonWebTokenError') {
+            console.log(error)
+            return res.status(401).send({ status: 'error', msg: 'Token Verification Failed', error: error.message })
+        }
+        return res.status(500).send({ status: 'error', msg: 'An error occured', error: error.message })
+    }
 })
 
 
 // Switch to Organization Profile
-router.post('/switch', authToken, async(req, res)=>{
-    const { password, twoFAPin} = req.body
+router.post('/switch', authToken, async (req, res) => {
+    const { password, twoFAPin } = req.body
 
-    if(!password || !twoFAPin) {
-        return res.status(400).send({status: 'error', msg: 'All fields are required'})
+    if (!password || !twoFAPin) {
+        return res.status(400).send({ status: 'error', msg: 'All fields are required' })
     }
 
     try {
-        const user =  await User.findById(req.user._id)
+        const user = await User.findById(req.user._id)
 
         if (!user) {
-            return res.status(404).send({status:'error', msg:'User not found'})
+            return res.status(404).send({ status: 'error', msg: 'User not found' })
         }
 
         // Check password
         const isPasswordValid = await bcrypt.compare(password, user.password)
         if (!isPasswordValid) {
-            return res.status(401).send({ status: 'error', msg: 'Incorrect password'})
+            return res.status(401).send({ status: 'error', msg: 'Incorrect password' })
         }
 
         // Check if 2FA PIN exists and matches and matches
         if (!user.twoFAPin) {
-            return res.status(400).send({ status: 'error', msg: 'Set up 2FA PIN first'})
+            return res.status(400).send({ status: 'error', msg: 'Set up 2FA PIN first' })
         }
 
-        if (user.twoFAPin !== twoFAPin) {
-            return res.status(401).send({ status: 'error', msg: 'Incorrect 2FA PIN'})
+        const isPinValid = await bcrypt.compare(twoFAPin, user.twoFAPin)
+        if (!isPinValid) {
+            return res.status(401).send({ status: 'error', msg: 'Incorrect 2FA PIN' })
         }
 
-        // Check if organization profile already exists
-        let orgProfile = await Organization.findOne({ owner_user_id: user._id })
+        // Check if organization already exists
+        let org = await Organization.findOne({ _id: user._id })
 
-        if (orgProfile) {
-            // Create organization Profile if none exists
-            orgProfile = new Organization({
-                owner_user_id: user._id,
-                name_of_organization: '',
-                company_reg_no: '',
-                industry: '',
-                email: user.email,
-                phone_no: user.phone_no
+        if (!org) {
+            return res.status(404).send({ status: 'error', msg: 'Organization account not found. This user account is not linked to an organization.' })
+        }
+
+        // Get organization profile
+        let orgProfile = await OrganizationProfile.findOne({ organization_id: org._id })
+
+        if (!orgProfile) {
+            // Create organization profile if none exists
+            orgProfile = new OrganizationProfile({
+                organization_id: org._id
             })
             await orgProfile.save()
         }
 
         // send response with organization profile data
-        return res.status(200).send({status: 'ok', msg: 'success', activeProfile: 'Organization', orgProfile})
+        return res.status(200).send({ status: 'ok', msg: 'success', activeProfile: 'Organization', org, orgProfile })
     } catch (error) {
-        if(error.name === 'JsonWebTokenError'){
-        console.log(error)
-        return res.status(401).send({status: 'error', msg: 'Token Verification Failed', error: error.message})
-}
-      return res.status(500).send({status: 'error', msg: 'An error occured', error: error.message})}
+        if (error.name === 'JsonWebTokenError') {
+            console.log(error)
+            return res.status(401).send({ status: 'error', msg: 'Token Verification Failed', error: error.message })
+        }
+        return res.status(500).send({ status: 'error', msg: 'An error occured', error: error.message })
+    }
 })
 
 /*
@@ -430,7 +439,7 @@ router.post('/change_password', authToken, async(req, res)=>{
 */
 
 // Toggle notifications for user
-router.post('/toggle', authToken, async(req, res) => {
+router.post('/toggle', authToken, async (req, res) => {
     try {
         const userId = req.user._id
         const user = await User.findById(userId)

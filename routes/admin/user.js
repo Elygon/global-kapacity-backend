@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 dotenv.config()
 
 const User = require('../../models/user')
+const UserProfile = require('../../models/user_profile')
 const authToken = require('../../middleware/authToken')
 
 
@@ -52,23 +53,23 @@ router.post("/search", authToken, async (req, res) => {
     const { name } = req.body
 
     if (!name) {
-        return res.status(400).send({status:'error', msg: 'Name is required'})
+        return res.status(400).send({ status: 'error', msg: 'Name is required' })
     }
 
     try {
         // Find the users
         const users = await User.find({
             name: { $regex: name, $options: "i" }
-        }).sort({date_added: -1})
+        }).sort({ date_added: -1 })
 
         if (!users || users.length === 0) {
             return res.status(200).send({ status: 'ok', msg: "No users found", count: 0, users: [] })
         }
 
-        return res.status(200).send({status: 'ok', msg: 'success', count: users.length, users})
+        return res.status(200).send({ status: 'ok', msg: 'success', count: users.length, users })
     } catch (e) {
-        return res.status(500).send({status: 'error', msg:'Error occurred', error: e.message})
-    }  
+        return res.status(500).send({ status: 'error', msg: 'Error occurred', error: e.message })
+    }
 })
 
 
@@ -76,7 +77,7 @@ router.post("/search", authToken, async (req, res) => {
 router.post('/block', authToken, async (req, res) => {
     try {
         const { id, block_reason } = req.body
-        if (!id || !block_reason ) {
+        if (!id || !block_reason) {
             return res.status(400).send({ status: 'error', msg: 'All fields are required' })
         }
 
@@ -97,7 +98,7 @@ router.post('/block', authToken, async (req, res) => {
 router.post('/unblock', authToken, async (req, res) => {
     try {
         const { id } = req.body
-        if (!id ) {
+        if (!id) {
             return res.status(400).send({ status: 'error', msg: 'User ID is required' })
         }
 
@@ -160,7 +161,7 @@ router.post('/ban', authToken, async (req, res) => {
 router.post('/unban', authToken, async (req, res) => {
     try {
         const { id } = req.body
-        if (!id ) {
+        if (!id) {
             return res.status(400).send({ status: 'error', msg: 'User ID is required' })
         }
 
@@ -215,6 +216,79 @@ router.post('/delete', authToken, async (req, res) => {
     } catch (error) {
         console.error(error)
         res.status(500).send({ status: 'error', msg: 'Error occurred' })
+    }
+})
+
+// Approve profile verification
+router.post('/approve', authToken, async (req, res) => {
+    try {
+        const { user_id } = req.body
+
+        if (!user_id) {
+            return res.status(400).send({ status: 'error', msg: 'User ID is required' })
+        }
+
+        // Find user profile
+        const profile = await UserProfile.findOne({ user_id })
+
+        if (!profile) {
+            return res.status(404).send({ status: 'error', msg: 'User profile not found' })
+        }
+
+        if (!profile.verification || !profile.verification.status) {
+            return res.status(400).send({ status: 'error', msg: 'No verification request found' })
+        }
+
+        if (profile.verification.status === 'approved') {
+            return res.status(400).send({ status: 'error', msg: 'Profile already verified' })
+        }
+
+        // Update verification status
+        profile.verification.status = 'approved'
+        profile.verification.reviewed_at = new Date()
+        profile.verification.reviewed_by = req.user._id
+
+        await profile.save()
+
+        res.status(200).send({ status: 'ok', msg: 'success', verification: profile.verification })
+    } catch (error) {
+        console.error(error)
+        res.status(500).send({ status: 'error', msg: 'Error occurred', error: error.message })
+    }
+})
+
+// Reject profile verification
+router.post('/reject', authToken, async (req, res) => {
+    try {
+        const { user_id, rejection_reason } = req.body
+
+        if (!user_id || !rejection_reason) {
+            return res.status(400).send({ status: 'error', msg: 'All fields are required' })
+        }
+
+        // Find user profile
+        const profile = await UserProfile.findOne({ user_id })
+
+        if (!profile) {
+            return res.status(404).send({ status: 'error', msg: 'User profile not found' })
+        }
+
+        if (!profile.verification || !profile.verification.status) {
+            return res.status(400).send({ status: 'error', msg: 'No verification request found' })
+        }
+
+        // Update verification status
+        profile.verification.status = 'rejected'
+        profile.verification.rejection_reason = rejection_reason
+        profile.verification.reviewed_at = new Date()
+        profile.verification.reviewed_by = req.user._id
+
+        await profile.save()
+
+        res.status(200).send({ status: 'ok', msg: 'success', verification: profile.verification })
+    } catch (error) {
+        console.error(error)
+        res.status(500).send({ status: 'error', msg: 'Error occurred', error: error.message })
     }
 })
 

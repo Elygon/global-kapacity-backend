@@ -36,8 +36,10 @@ router.post('/Post', authToken, uploader.array('images', 2), async (req, res) =>
                     quality: 'auto'
                 })
 
-                images.push({ img_id: upload.public_id, img_url: upload.secure_url, 
-                    thumb_id: thumb.public_id, thumb_url: thumb.secure_url }
+                images.push({
+                    img_id: upload.public_id, img_url: upload.secure_url,
+                    thumb_id: thumb.public_id, thumb_url: thumb.secure_url
+                }
                 )
             }
         }
@@ -62,10 +64,10 @@ router.post('/Post', authToken, uploader.array('images', 2), async (req, res) =>
         }
 
         const news = new News({
-            title, 
+            title,
             content,
             images, // attach upload
-            is_visible: is_visible !== undefined ? is_visible: true,
+            is_visible: is_visible !== undefined ? is_visible : true,
             created_by: req.user._id
         })
 
@@ -90,7 +92,7 @@ router.post('/update', authToken, uploader.array('images', 2), async (req, res) 
         if (!news) {
             return res.status(404).send({ status: "error", msg: "News not found" })
         }
-        
+
         // Handle new image uploads
         if (req.files && req.files.length > 0) {
             // Delete old images from Cloudinary first
@@ -108,7 +110,8 @@ router.post('/update', authToken, uploader.array('images', 2), async (req, res) 
                 // Generate thumbnail URL (on the fly using Cloudinary URL transformation)
                 const thumbUrl = upload.secure_url.replace('/upload/', '/upload/w_200,h_200,c_fill/')
 
-                uploadedImages.push({ img_id: upload.public_id, img_url: upload.secure_url, 
+                uploadedImages.push({
+                    img_id: upload.public_id, img_url: upload.secure_url,
                     thumb_url: thumbUrl // can send to the frontend only
                 })
             }
@@ -153,7 +156,10 @@ router.post('/delete', authToken, async (req, res) => {
 //View all News 
 router.post('/all', authToken, async (req, res) => {
     try {
-        const news = await News.find({ is_visible: true }).sort({ createdAt: -1 })
+        const news = await News.find({ is_visible: true })
+            .sort({ createdAt: -1 })
+            .populate('comments.user_id', 'firstname lastname email profile_img_url')
+            .populate('comments.organization_id', 'company_name email profile_img_url')
         return res.status(200).send({ status: 'ok', msg: 'success', news })
     } catch (e) {
         return res.status(500).send({ status: 'error', msg: 'Error occurred', error: e.message })
@@ -171,6 +177,8 @@ router.post('/view', authToken, async (req, res) => {
 
     try {
         const news = await News.findById(newsId)
+            .populate('comments.user_id', 'firstname lastname email profile_img_url')
+            .populate('comments.organization_id', 'company_name email profile_img_url')
         if (!news) {
             return res.status(404).send({ status: 'error', msg: 'News not found.' })
         }

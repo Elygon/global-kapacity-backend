@@ -51,6 +51,9 @@ const organizationSchema = new Schema({
     phone_no: String,
     password: String,
     twoFAPin: { type: String, default: null }, // Hashed 2FA PIN for profile switching
+    profile_img_id: { type: String, default: '' }, // Cloudinary public ID
+    profile_img_url: { type: String, default: '' }, // Profile image URL
+    notificationsEnabled: { type: Boolean, default: false }, // Notification toggle
     authProvider: {
         type: String,
         enum: ['email', 'google', 'apple'],

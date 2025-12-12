@@ -126,11 +126,9 @@ router.post('/edit', uploader.single('profile_img'), authToken, async (req, res)
 // endpoint to upload media photos
 router.post('/upload_photos', authToken, uploader.single('file'), async (req, res) => {
     try {
-        if (!req.file) return res.status(400).send({ status: 'error', msg: 'No file uploaded' })
-
-        const upload = await cloudinary.uploader.upload(req.file.path, {
-            folder: "media/photos"
-        })
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).send({ status: 'error', msg: 'No files uploaded' })
+        }
 
         let profile = await OrganizationProfile.findOne({ organization_id: req.user._id });
 
@@ -138,19 +136,30 @@ router.post('/upload_photos', authToken, uploader.single('file'), async (req, re
             profile = new OrganizationProfile({ organization_id: req.user._id })
         }
 
-        // Ensure media array exists and has at least one element
+        // Ensure media structure exists
         if (!profile.media || profile.media.length === 0) {
             profile.media = [{ photos: [], videos: [], awards: [] }]
         }
 
-        profile.media[0].photos.push({
-            file_url: upload.secure_url,
-            file_id: upload.public_id
-        })
+        const uploadedPhotos = []
+
+        // Upload each selected file to Cloudinary
+        for (const file of req.files) {
+            const upload = await cloudinary.uploader.upload(file.path, {
+                folder: "media/photos"
+            })
+
+            profile.media[0].photos.push({
+                file_url: upload.secure_url,
+                file_id: upload.public_id
+            })
+
+            uploadedPhotos.push(upload)
+        }
 
         await profile.save()
 
-        return res.status(200).send({ status: 'ok', msg: 'success', file: upload })
+        return res.status(200).send({ status: 'ok', msg: 'success', file: uploadedPhotos })
     } catch (error) {
         return res.status(500).send({ status: 'error', msg: error.message })
     }
@@ -296,8 +305,12 @@ router.post('/setup_pin', authToken, async (req, res) => {
     const { twoFAPin, confirm_twoFAPin } = req.body
 
     //check if fields are passed correctly
-    if (!twoFAPin || !confirm_twoFAPin || twoFAPin.length !== 6 || confirm_twoFAPin.length !== 6) {
-        return res.status(400).send({ status: 'error', msg: 'Both 2FA Pin and Confirm 2FA Pin must be 6 digits' })
+    if (!twoFAPin || !confirm_twoFAPin) {
+        return res.status(400).send({ status: 'error', msg: 'All fields are required' })
+    }
+
+    if (twoFAPin.length !== 6 || confirm_twoFAPin.length !== 6) {
+        return res.status(400).send({ status: 'error', msg: '2FA Pin must be 6 digits' })
     }
 
     if (twoFAPin !== confirm_twoFAPin) {
@@ -336,9 +349,12 @@ router.post('/edit_pin', authToken, async (req, res) => {
     const { current_twoFAPin, new_twoFAPin, confirm_new_twoFAPin } = req.body
 
     //check if fields are passed correctly
-    if (!current_twoFAPin || !new_twoFAPin || !confirm_new_twoFAPin || new_twoFAPin.length !== 6 ||
-        confirm_new_twoFAPin.length !== 6) {
-        return res.status(400).send({ status: 'error', msg: 'Both 2FA Pin and Confirm 2FA Pin must be 6 digits' })
+    if (!current_twoFAPin || !new_twoFAPin || !confirm_new_twoFAPin) {
+        return res.status(400).send({ status: 'error', msg: 'All fields are required' })
+    }
+
+    if (new_twoFAPin.length !== 6 || confirm_new_twoFAPin.length !== 6) {
+        return res.status(400).send({ status: 'error', msg: 'New 2FA Pin must be 6 digits' })
     }
 
     if (new_twoFAPin !== confirm_new_twoFAPin) {
@@ -389,7 +405,7 @@ router.post('/switch', authToken, async (req, res) => {
         const org = await Organization.findById(req.user._id)
 
         if (!org) {
-            return res.status(404).send({ status: 'error', msg: 'User not found' })
+            return res.status(404).send({ status: 'error', msg: 'Organization not found' })
         }
 
         // Check password

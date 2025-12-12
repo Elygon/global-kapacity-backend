@@ -9,6 +9,9 @@ const userSchema = new Schema({
     phone_no: String,
     password: String,
     twoFAPin: String, // Hashed 2FA PIN for profile switching
+    profile_img_id: { type: String, default: '' },
+    profile_img_url: { type: String, default: '' },
+    notificationsEnabled: { type: Boolean, default: false }, // Notification toggle
     authProvider: {
         type: String,
         enum: ['email', 'google', 'apple'],

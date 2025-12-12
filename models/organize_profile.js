@@ -40,10 +40,7 @@ const orgProfileSchema = new Schema({
         awards: [
             { file_id: String, file_url: String }
         ]
-    }],
-    profile_img_id: { type: String, default: '' }, // Cloudinary public ID
-    profile_img_url: { type: String, default: '' }, // Profile image URL
-    notificationsEnabled: { type: Boolean, default: false } // Notification toggle
+    }]
 }, { timestamps: true, collection: 'organizations_profile'})
 
 const model = mongoose.model('OrganizationProfile', orgProfileSchema)

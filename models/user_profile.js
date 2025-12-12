@@ -7,11 +7,11 @@ const userProfileSchema = new Schema({
     address: String,
     date_of_birth: String,
     professional_bio: [{
-        profession: String,
-        country: String,
-        state: String,
-        city: String,
-        about: String
+        about: String,
+        state_of_origin: String,
+        city_of_residence: String,
+        country_of_residence: String,
+        country_of_origin: String
     }],
     school: [{
         name_of_school: String,
@@ -34,11 +34,11 @@ const userProfileSchema = new Schema({
             { img_id: String, img_url: String }
         ]
     }],
-    skills: { 
+    skills: [{
         type: String,
-        enum: [ 'Adaptability', 'Analytical Thinking', 'Attention to Detail', 'Artificial Intelligence', 'Audit and Compliance',
-            'Business Analysis', 'Budget Management', 'Branding', 'Bookkeeping', 'Blockchain','Communication', 'Collaboration',
-            'Conflict Resolution', 'Content Creation', 'Copywriting', 'Critical Thinking','Customer Service', 'Cybersecurity',
+        enum: ['Adaptability', 'Analytical Thinking', 'Attention to Detail', 'Artificial Intelligence', 'Audit and Compliance',
+            'Business Analysis', 'Budget Management', 'Branding', 'Bookkeeping', 'Blockchain', 'Communication', 'Collaboration',
+            'Conflict Resolution', 'Content Creation', 'Copywriting', 'Critical Thinking', 'Customer Service', 'Cybersecurity',
             'Data Analysis', 'Data Entry', 'Decision-Making', 'Design Thinking', 'Digital Marketing', 'Diplomacy', 'Emotional Intelligence',
             'Empathy', 'Event Planning', 'Enterpreneurship', 'Ethical Thinking', 'Financial Management', 'Flexibility', 'Forecasting',
             'Fundraising', 'Goal Setting', 'Graphics Design', 'Growth Strategy', 'Human Resource Management', 'HTML/CSS', 'Help Desk Support',
@@ -53,30 +53,28 @@ const userProfileSchema = new Schema({
             'User Experience (UX) Design', 'User Interface (UI) Design', 'Verbal Communication', 'Video Editing', 'Virtual Collaboration',
             'Web Development', 'Writing', 'XML Knowledge', 'Youth Mentorship', 'Zero-Defect Mindset', 'Zonal Coordination'
         ]
-    },
-    professional_membership: [{
-        name: String
     }],
+    professional_membership: [String],
     media: [{
         photos: [
             { file_id: String, file_url: String }
         ],
         videos: [
-            { file_id: String, file_url: String}
+            { file_id: String, file_url: String }
         ],
         awards: [
             { file_id: String, file_url: String }
         ]
     }],
     others: {
-        languages: [{ 
+        languages: [{
             name: String, strenth: String // e.g 'Fluent', 'Intermediate'
         }],
         hobbies: [String], // e.g 'Reading', 'Singing'
         references: [{
             fullname: String,
             email: String,
-            profile_link: { type: String, default: ''} // optional
+            profile_link: { type: String, default: '' } // optional
         }],
         social_links: {
             facebook: String,
@@ -94,10 +92,19 @@ const userProfileSchema = new Schema({
         profile_link: String
     }],
     name_of_certification: String,
-    profile_img_id: { type: String, default: '' },
-    profile_img_url: { type: String, default: '' },
-    notificationsEnabled: { type: Boolean, default: false }
-}, { timestamps: true, collection: 'users_profile'})
+    verification: {
+        firstname: String,
+        lastname: String,
+        id_no: String,
+        gov_id_url: String,
+        gov_id: String,
+        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+        submitted_at: Date,
+        reviewed_at: Date,
+        reviewed_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
+        rejection_reason: String
+    }
+}, { timestamps: true, collection: 'users_profile' })
 
 const model = mongoose.model('UserProfile', userProfileSchema)
 module.exports = model
